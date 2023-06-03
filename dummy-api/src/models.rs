@@ -5,11 +5,68 @@ use tokio::sync::Mutex;
 
 pub type Db = Arc<Mutex<Vec<Profile>>>;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Default, Debug, Deserialize, Serialize, Clone)]
 pub struct Profile {
     pub id: u8,
     pub username: String,
     pub password: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub kind: Kind,
+}
+
+impl Profile {
+    pub fn new() -> Profile {
+        Profile::default()
+    }
+
+    pub fn with_id(mut self, value: u8) -> Profile {
+        self.id = value;
+        self
+    }
+
+    pub fn with_username(mut self, value: String) -> Profile {
+        self.username = value;
+        self
+    }
+
+    pub fn with_password(mut self, value: String) -> Profile {
+        self.password = value;
+        self
+    }
+
+    pub fn with_first_name(mut self, value: String) -> Profile {
+        self.first_name = value;
+        self
+    }
+
+    pub fn with_last_name(mut self, value: String) -> Profile {
+        self.last_name = value;
+        self
+    }
+
+    pub fn with_kind(mut self, value: Kind) -> Profile {
+        self.kind = value;
+        self
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum Kind {
+    #[serde(rename = "admin")]
+    Admin,
+
+    #[serde(rename = "teacher")]
+    Mentor,
+
+    #[serde(rename = "student")]
+    Trainee,
+}
+
+impl Default for Kind {
+    fn default() -> Self {
+        Self::Trainee
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

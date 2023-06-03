@@ -16,31 +16,26 @@ async fn main() {
     let db = models::new_db();
 
     let profiles = [
-        models::Profile {
-            id: 1,
-            username: String::from("tim"),
-            password: String::from("secret"),
-        },
-        models::Profile {
-            id: 2,
-            username: String::from("mara"),
-            password: String::from("secret"),
-        },
-        models::Profile {
-            id: 3,
-            username: String::from("deno"),
-            password: String::from("secret"),
-        },
-        models::Profile {
-            id: 4,
-            username: String::from("ferris"),
-            password: String::from("secret"),
-        },
-        models::Profile {
-            id: 5,
-            username: String::from("david"),
-            password: String::from("secret"),
-        },
+        models::Profile::new()
+            .with_id(1)
+            .with_username(String::from("tim"))
+            .with_password(String::from("secret")),
+        models::Profile::new()
+            .with_id(2)
+            .with_username(String::from("mara"))
+            .with_password(String::from("secret")),
+        models::Profile::new()
+            .with_id(3)
+            .with_username(String::from("deno"))
+            .with_password(String::from("secret")),
+        models::Profile::new()
+            .with_id(4)
+            .with_username(String::from("ferris"))
+            .with_password(String::from("secret")),
+        models::Profile::new()
+            .with_id(5)
+            .with_username(String::from("david"))
+            .with_password(String::from("secret")),
     ];
 
     models::initialize(db.clone(), &profiles).await;
@@ -91,11 +86,10 @@ mod tests {
     #[tokio::test]
     async fn test_login() {
         let db = models::new_db();
-        let profile = models::Profile {
-            id: 123,
-            username: String::from("mara"),
-            password: String::from("secret"),
-        };
+        let profile = models::Profile::new()
+            .with_id(123)
+            .with_username(String::from("mara"))
+            .with_password(String::from("secret"));
 
         models::initialize(db.clone(), &[profile]).await;
 
