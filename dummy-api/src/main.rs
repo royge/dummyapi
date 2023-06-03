@@ -1,5 +1,7 @@
 use std::env;
 use warp::Filter;
+use dummy_api::auth;
+use dummy_api::models;
 
 #[tokio::main]
 async fn main() {
@@ -73,112 +75,6 @@ fn show_credentials(profiles: &[models::Profile]) {
     println!("\nYou can login using any of the following credentials.\n");
     for p in profiles {
         println!("\tusername: {}\n\tpassword: {}\n", p.username, p.password);
-    }
-}
-
-mod auth {
-    use super::handlers;
-    use super::models::{Credentials, Db};
-    use std::convert::Infallible;
-    use warp::Filter;
-
-    pub fn auth(
-        db: Db,
-    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        login(db)
-    }
-
-    pub fn login(
-        db: Db,
-    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        warp::path!("auth")
-            .and(warp::post())
-            .and(json_body())
-            .and(with_db(db))
-            .and_then(handlers::login)
-    }
-
-    fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
-        warp::any().map(move || db.clone())
-    }
-
-    fn json_body() -> impl Filter<Extract = (Credentials,), Error = warp::Rejection> + Clone {
-        // When accepting a body, we want a JSON body
-        // (and to reject huge payloads)...
-        warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    }
-}
-
-mod handlers {
-    use super::models::{Credentials, Db, Response};
-    use serde_json::json;
-    use std::convert::Infallible;
-    use warp::http::StatusCode;
-
-    pub async fn login(credentials: Credentials, db: Db) -> Result<impl warp::Reply, Infallible> {
-        log::debug!("auth_login: {:?}", credentials);
-
-        let vec = db.lock().await;
-
-        for account in vec.iter() {
-            if account.username == credentials.username && account.password == credentials.password
-            {
-                let json = warp::reply::json(&Response {
-                    data: json!({ "id": account.id }),
-                    error: json!(null),
-                });
-                return Ok(warp::reply::with_status(json, StatusCode::OK));
-            }
-        }
-
-        let json = warp::reply::json(&Response {
-            data: json!(null),
-            error: json!("Invalid username or password!"),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED))
-    }
-}
-
-mod models {
-    use serde_derive::{Deserialize, Serialize};
-    use serde_json::Value;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
-
-    pub type Db = Arc<Mutex<Vec<Profile>>>;
-
-    #[derive(Debug, Deserialize, Serialize, Clone)]
-    pub struct Profile {
-        pub id: u8,
-        pub username: String,
-        pub password: String,
-    }
-
-    #[derive(Debug, Deserialize, Serialize, Clone)]
-    pub struct Credentials {
-        pub username: String,
-        pub password: String,
-    }
-
-    pub fn new_db() -> Db {
-        Arc::new(Mutex::new(Vec::new()))
-    }
-
-    pub async fn initialize(db: Db, list: &[Profile]) {
-        let mut vec = db.lock().await;
-
-        for profs in list {
-            vec.push(profs.clone());
-        }
-    }
-
-    #[derive(Serialize)]
-    pub struct Response {
-        #[serde(skip_serializing_if = "Value::is_null")]
-        pub data: Value,
-
-        #[serde(skip_serializing_if = "Value::is_null")]
-        pub error: Value,
     }
 }
 
