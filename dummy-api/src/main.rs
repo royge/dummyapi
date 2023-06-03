@@ -13,30 +13,35 @@ async fn main() {
 
     let db = models::new_db();
 
-    let credentials = [
-        models::Credentials{
+    let profiles = [
+        models::Profile {
+            id: 1,
             username: String::from("tim"),
             password: String::from("secret"),
         },
-        models::Credentials{
+        models::Profile {
+            id: 2,
             username: String::from("mara"),
             password: String::from("secret"),
         },
-        models::Credentials{
+        models::Profile {
+            id: 3,
             username: String::from("deno"),
             password: String::from("secret"),
         },
-        models::Credentials{
+        models::Profile {
+            id: 4,
             username: String::from("ferris"),
             password: String::from("secret"),
         },
-        models::Credentials{
+        models::Profile {
+            id: 5,
             username: String::from("david"),
             password: String::from("secret"),
         },
     ];
 
-    models::initialize(db.clone(), &credentials).await;
+    models::initialize(db.clone(), &profiles).await;
 
     let api = auth::auth(db);
 
@@ -46,26 +51,28 @@ async fn main() {
         .allow_methods(vec!["POST"]);
 
     // View access logs by setting `RUST_LOG=auth`.
-    let routes = api
-        .with(cors)
-        .with(warp::log("auth"));
+    let routes = api.with(cors).with(warp::log("auth"));
 
     let host = [127, 0, 0, 1];
     let port = 3030;
 
-    let host_string = host.iter().map(|item| item.to_string()).collect::<Vec<String>>().join(".");
+    let host_string = host
+        .iter()
+        .map(|item| item.to_string())
+        .collect::<Vec<String>>()
+        .join(".");
     println!("Starting dummy server at http://{}:{}", host_string, &port);
 
-    show_credentials(&credentials);
+    show_credentials(&profiles);
 
     // Start up the server...
     warp::serve(routes).run((host, port)).await;
 }
 
-fn show_credentials(creds: &[models::Credentials]) {
+fn show_credentials(profiles: &[models::Profile]) {
     println!("\nYou can login using any of the following credentials.\n");
-    for c in creds {
-        println!("\tusername: {}\n\tpassword: {}\n", c.username, c.password);
+    for p in profiles {
+        println!("\tusername: {}\n\tpassword: {}\n", p.username, p.password);
     }
 }
 
@@ -75,7 +82,9 @@ mod auth {
     use std::convert::Infallible;
     use warp::Filter;
 
-    pub fn auth(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    pub fn auth(
+        db: Db,
+    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         login(db)
     }
 
@@ -101,7 +110,8 @@ mod auth {
 }
 
 mod handlers {
-    use super::models::{Credentials, Db};
+    use super::models::{Credentials, Db, Response};
+    use serde_json::json;
     use std::convert::Infallible;
     use warp::http::StatusCode;
 
@@ -113,20 +123,36 @@ mod handlers {
         for account in vec.iter() {
             if account.username == credentials.username && account.password == credentials.password
             {
-                return Ok(StatusCode::OK);
+                let json = warp::reply::json(&Response {
+                    data: json!({ "id": account.id }),
+                    error: json!(null),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::OK));
             }
         }
 
-        Ok(StatusCode::UNAUTHORIZED)
+        let json = warp::reply::json(&Response {
+            data: json!(null),
+            error: json!("Invalid username or password!"),
+        });
+        Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED))
     }
 }
 
 mod models {
     use serde_derive::{Deserialize, Serialize};
+    use serde_json::Value;
     use std::sync::Arc;
     use tokio::sync::Mutex;
 
-    pub type Db = Arc<Mutex<Vec<Credentials>>>;
+    pub type Db = Arc<Mutex<Vec<Profile>>>;
+
+    #[derive(Debug, Deserialize, Serialize, Clone)]
+    pub struct Profile {
+        pub id: u8,
+        pub username: String,
+        pub password: String,
+    }
 
     #[derive(Debug, Deserialize, Serialize, Clone)]
     pub struct Credentials {
@@ -138,12 +164,21 @@ mod models {
         Arc::new(Mutex::new(Vec::new()))
     }
 
-    pub async fn initialize(db: Db, list: &[Credentials]) {
+    pub async fn initialize(db: Db, list: &[Profile]) {
         let mut vec = db.lock().await;
 
-        for creds in list {
-            vec.push(creds.clone());
+        for profs in list {
+            vec.push(profs.clone());
         }
+    }
+
+    #[derive(Serialize)]
+    pub struct Response {
+        #[serde(skip_serializing_if = "Value::is_null")]
+        pub data: Value,
+
+        #[serde(skip_serializing_if = "Value::is_null")]
+        pub error: Value,
     }
 }
 
@@ -152,24 +187,28 @@ mod tests {
     use warp::http::StatusCode;
     use warp::test::request;
 
-    use super::{auth, models::{self, Credentials}};
+    use super::{
+        auth,
+        models::{self, Credentials},
+    };
 
     #[tokio::test]
     async fn test_login() {
         let db = models::new_db();
-        let creds = models::Credentials{
-                username: String::from("mara"),
-                password: String::from("secret"),
-            };
+        let profile = models::Profile {
+            id: 123,
+            username: String::from("mara"),
+            password: String::from("secret"),
+        };
 
-        models::initialize(db.clone(), &[creds]).await;
+        models::initialize(db.clone(), &[profile]).await;
 
         let api = auth::auth(db);
 
         let resp = request()
             .method("POST")
             .path("/auth")
-            .json(&Credentials{
+            .json(&Credentials {
                 username: String::from("mara"),
                 password: String::from("secret"),
             })
@@ -177,11 +216,12 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.body(), "{\"data\":{\"id\":123}}");
 
         let resp = request()
             .method("POST")
             .path("/auth")
-            .json(&Credentials{
+            .json(&Credentials {
                 username: String::from("klabnik"),
                 password: String::from("secret"),
             })
@@ -189,5 +229,9 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            resp.body(),
+            "{\"error\":\"Invalid username or password!\"}"
+        );
     }
 }
