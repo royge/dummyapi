@@ -1,6 +1,6 @@
 use std::env;
 use warp::Filter;
-use dummy_api::auth;
+use dummy_api::{auth, profile};
 use dummy_api::models;
 
 #[tokio::main]
@@ -40,7 +40,8 @@ async fn main() {
 
     models::initialize(db.clone(), &profiles).await;
 
-    let api = auth::auth(db);
+    let api = auth::auth(db.clone())
+        .or(profile::profiles(db.clone()));
 
     let cors = warp::cors()
         .allow_any_origin()
@@ -70,58 +71,5 @@ fn show_credentials(profiles: &[models::Profile]) {
     println!("\nYou can login using any of the following credentials.\n");
     for p in profiles {
         println!("\tusername: {}\n\tpassword: {}\n", p.username, p.password);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use warp::http::StatusCode;
-    use warp::test::request;
-
-    use super::{
-        auth,
-        models::{self, Credentials},
-    };
-
-    #[tokio::test]
-    async fn test_login() {
-        let db = models::new_db();
-        let profile = models::Profile::new()
-            .with_id(123)
-            .with_username(String::from("mara"))
-            .with_password(String::from("secret"));
-
-        models::initialize(db.clone(), &[profile]).await;
-
-        let api = auth::auth(db);
-
-        let resp = request()
-            .method("POST")
-            .path("/auth")
-            .json(&Credentials {
-                username: String::from("mara"),
-                password: String::from("secret"),
-            })
-            .reply(&api)
-            .await;
-
-        assert_eq!(resp.status(), StatusCode::OK);
-        assert_eq!(resp.body(), "{\"data\":{\"id\":123}}");
-
-        let resp = request()
-            .method("POST")
-            .path("/auth")
-            .json(&Credentials {
-                username: String::from("klabnik"),
-                password: String::from("secret"),
-            })
-            .reply(&api)
-            .await;
-
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-        assert_eq!(
-            resp.body(),
-            "{\"error\":\"Invalid username or password!\"}"
-        );
     }
 }

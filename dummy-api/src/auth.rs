@@ -14,7 +14,7 @@ pub fn login(
         .and(warp::post())
         .and(json_body())
         .and(with_db(db))
-        .and_then(handlers::login)
+        .and_then(handlers::auth::login)
 }
 
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {

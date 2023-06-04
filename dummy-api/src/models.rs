@@ -7,11 +7,19 @@ pub type Db = Arc<Mutex<Vec<Profile>>>;
 
 #[derive(Default, Debug, Deserialize, Serialize, Clone)]
 pub struct Profile {
+    #[serde(default)]
     pub id: u8,
+
     pub username: String,
     pub password: String,
+
+    #[serde(default)]
     pub first_name: String,
+
+    #[serde(default)]
     pub last_name: String,
+
+    #[serde(default)]
     pub kind: Kind,
 }
 
@@ -53,6 +61,9 @@ impl Profile {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Kind {
+    #[serde(rename = "root")]
+    Root,
+
     #[serde(rename = "admin")]
     Admin,
 
