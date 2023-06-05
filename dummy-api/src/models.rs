@@ -2,6 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use rand::Rng;
 
 pub type Db = Arc<Mutex<Vec<Profile>>>;
 
@@ -43,6 +44,11 @@ impl Profile {
         self
     }
 
+    pub fn with_generated_password(mut self) -> Profile {
+        self.password = generate_password(8);
+        self
+    }
+
     pub fn with_first_name(mut self, value: String) -> Profile {
         self.first_name = value;
         self
@@ -57,6 +63,20 @@ impl Profile {
         self.kind = value;
         self
     }
+}
+
+fn generate_password(length: usize) -> String {
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+
+    let mut rng = rand::thread_rng();
+    let password: String = (0..length)
+        .map(|_| {
+            let idx = rng.gen_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
+        .collect();
+
+    password
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
