@@ -3,7 +3,7 @@ login:
 		-v \
 		-XPOST \
 		-H "Content-type: application/json" \
-		-d '{"username":"mara","password":"secret"}' \
+		-d '{"username":"root","password":"PqP2^Hct"}' \
 		'http://127.0.0.1:3030/auth'
 
 create-admin:
