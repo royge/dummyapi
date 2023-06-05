@@ -33,7 +33,7 @@ This a dummy backend API for course management project.
 
    ```json
    {
-      "data": { "id": 10 }
+      "data": { "id": 10, "type": "admin" }
    }
    ```
 

@@ -65,11 +65,12 @@ pub mod profile {
         }
 
         let id = profile.id;
+        let kind = profile.kind.clone();
 
         vec.push(profile);
 
         let json = warp::reply::json(&Response {
-            data: json!({ "id": id }),
+            data: json!({ "id": id, "type": kind }),
             error: json!(null),
         });
         Ok(warp::reply::with_status(json, StatusCode::CREATED))

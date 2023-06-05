@@ -67,7 +67,7 @@ async fn test_create_profile() {
         .await;
 
     assert_eq!(resp.status(), StatusCode::CREATED);
-    assert_eq!(resp.body(), "{\"data\":{\"id\":1}}");
+    assert_eq!(resp.body(), "{\"data\":{\"id\":1,\"type\":\"admin\"}}");
 
     let resp = request()
         .method("POST")
