@@ -12,17 +12,17 @@ async fn main() {
 
     pretty_env_logger::init();
 
-    let db = models::new_db();
+    let db = models::profile::new_db();
 
     let profiles = [
-        models::Profile::new()
+        models::profile::Profile::new()
             .with_id(1)
             .with_username(String::from("root"))
             .with_generated_password()
-            .with_kind(models::Kind::Root),
+            .with_kind(models::profile::Kind::Root),
     ];
 
-    models::initialize(db.clone(), &profiles).await;
+    models::profile::initialize(db.clone(), &profiles).await;
 
     let api = auth::auth(db.clone())
         .or(profile::profiles(db.clone()));
@@ -51,7 +51,7 @@ async fn main() {
     warp::serve(routes).run((host, port)).await;
 }
 
-fn show_credentials(profiles: &[models::Profile]) {
+fn show_credentials(profiles: &[models::profile::Profile]) {
     println!("\nYou can login using the following root credentials.\n");
     for p in profiles {
         println!("\tusername: {}\n\tpassword: {}\n", p.username, p.password);

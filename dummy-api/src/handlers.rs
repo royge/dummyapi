@@ -1,5 +1,6 @@
 pub mod auth {
-    use crate::models::{Credentials, Db, Response};
+    use crate::models::profile::{Credentials, Db};
+    use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
     use warp::http::StatusCode;
@@ -29,7 +30,8 @@ pub mod auth {
 }
 
 pub mod profile {
-    use crate::models::{Db, Profile, Response};
+    use crate::models::profile::{Db, Profile};
+    use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;

@@ -1,5 +1,5 @@
 use super::handlers;
-use super::models::{Credentials, Db};
+use super::models::profile::{Credentials, Db};
 use std::convert::Infallible;
 use warp::Filter;
 

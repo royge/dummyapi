@@ -3,19 +3,19 @@ use warp::test::request;
 
 use dummy_api::{
     auth,
-    models::{self, Credentials, Kind, Profile},
+    models::profile::{self, Credentials, Kind, Profile},
     profile,
 };
 
 #[tokio::test]
 async fn test_login() {
-    let db = models::new_db();
-    let profile = models::Profile::new()
+    let db = models::profile::new_db();
+    let profile = Profile::new()
         .with_id(123)
         .with_username(String::from("mara"))
         .with_password(String::from("secret"));
 
-    models::initialize(db.clone(), &[profile]).await;
+    models::profile::initialize(db.clone(), &[profile]).await;
 
     let api = auth::auth(db);
 
@@ -48,7 +48,7 @@ async fn test_login() {
 
 #[tokio::test]
 async fn test_create_profile() {
-    let db = models::new_db();
+    let db = models::profile::new_db();
 
     let api = profile::profiles(db);
 
