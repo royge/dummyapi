@@ -1,4 +1,5 @@
 pub mod auth {
+    use crate::auth::generate_token;
     use crate::models::profile::{Credentials, Db};
     use crate::models::Response;
     use serde_json::json;
@@ -14,7 +15,10 @@ pub mod auth {
             if account.username == credentials.username && account.password == credentials.password
             {
                 let json = warp::reply::json(&Response {
-                    data: json!({ "id": account.id }),
+                    data: json!({
+                        "id": account.id,
+                        "token": generate_token(account.id).unwrap(),
+                    }),
                     error: json!(null),
                 });
                 return Ok(warp::reply::with_status(json, StatusCode::OK));

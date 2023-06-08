@@ -1,6 +1,7 @@
 use std::env;
 use warp::Filter;
-use dummy_api::{auth, profile, models};
+use dummy_api::{auth, config, profile, models};
+use lazy_static::lazy_static;
 
 #[tokio::main]
 async fn main() {
@@ -9,6 +10,16 @@ async fn main() {
         // this only shows access logs.
         env::set_var("RUST_LOG", "todos=info");
     }
+
+    lazy_static! {
+        static ref SECRET_KEY: String = {
+            String::from_utf8(auth::generate_secret_key(32)).unwrap()
+        };
+    }
+
+    config::CONFIG.set(config::Config{
+        jwt_secret: SECRET_KEY.as_bytes(),
+    }).expect("Error setting application configuration.");
 
     pretty_env_logger::init();
 
