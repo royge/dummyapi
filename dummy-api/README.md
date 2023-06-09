@@ -2,7 +2,11 @@
 
 This a dummy backend API for course management project.
 
-__Base URL:__[https://dummy-api-ygn33ixetq-as.a.run.app](https://dummy-api-ygn33ixetq-as.a.run.app)
+_Base URL:_ [https://dummy-api-ygn33ixetq-as.a.run.app](https://dummy-api-ygn33ixetq-as.a.run.app)
+
+_**WARNING**:_ Your data is not saved in a permanent storage, so it will be
+erase when the server terminates. When there is no request coming in for around
+5 minutes or more since the last one the server terminates to save costs.
 
 ## Supported RESTful APIs
 
