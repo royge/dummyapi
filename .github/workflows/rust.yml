@@ -30,6 +30,10 @@ env:
   CARGO_TERM_COLOR: always
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
   IMAGE: dummy-api
+  MAX_INSTANCES: 1
+  MEMORY: 128Mi
+  PORT: 3030
+  REGION: asia-southeast1
 
 jobs:
   build:
@@ -66,17 +70,19 @@ jobs:
       run: |-
         docker build \
           --tag "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA" \
-          .
+          . && \
+        docker tag "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA" "gcr.io/$PROJECT_ID/$IMAGE:latest"
 
     # Push the Docker image to Google Container Registry
     - name: Publish
       run: |-
-        docker push "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA"
+        docker push "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA" && \
+        docker push "gcr.io/$PROJECT_ID/$IMAGE:latest"
 
     # Deploy the Docker image to Google Cloud Run
-    # - name: Deploy
-    #   uses: 'google-github-actions/deploy-cloudrun@v1'
-    #   with:
-    #     service: 'dummy-api'
-    #     image: 'gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA'
-    #     flags: '--platform=managed --port=3030 --region=asia-southeast1 --allow-unauthenticated --command=./dummy-api'
+    - name: Deploy
+      uses: 'google-github-actions/deploy-cloudrun@v1'
+      with:
+        service: 'dummy-api'
+        image: 'gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE }}:latest'
+        flags: '--project=${{ env.PROJECT_ID }} --platform=managed --port=${{ env.PORT }} --region=${{ env.REGION }} --allow-unauthenticated --max-instances=${{ env.MAX_INSTANCES }} --memory=${{ env.MEMORY }} --command=./dummy-api'
