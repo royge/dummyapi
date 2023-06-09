@@ -2,6 +2,8 @@
 
 This a dummy backend API for course management project.
 
+__Base URL:__[https://dummy-api-ygn33ixetq-as.a.run.app](https://dummy-api-ygn33ixetq-as.a.run.app)
+
 ## Supported RESTful APIs
 
    1. User profile registration

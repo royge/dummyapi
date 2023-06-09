@@ -5,17 +5,31 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - 'basic-automated-tests/**'
+      - 'basic-automated-tests/*'
       - 'project/**'
+      - 'project/*'
+      - 'examples/**'
+      - 'examples/*'
       - '*.md'
+      - '.github/workflows/node.js.yml'
+      - '.gitignore'
   pull_request:
     branches: [ "main" ]
     paths-ignore:
       - 'basic-automated-tests/**'
+      - 'basic-automated-tests/*'
       - 'project/**'
+      - 'project/*'
+      - 'examples/**'
+      - 'examples/*'
       - '*.md'
+      - '.github/workflows/node.js.yml'
+      - '.gitignore'
 
 env:
   CARGO_TERM_COLOR: always
+  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+  IMAGE: dummy-api
 
 jobs:
   build:
@@ -27,7 +41,42 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
+
+    - name: Authenticate
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    # Setup gcloud CLI
+    - uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT }}
+
+    # Configure Docker to use the gcloud command-line tool as a credential
+    # helper for authentication
+    - run: |-
+        gcloud --quiet auth configure-docker
+
+    # Build the Docker image
     - name: Build
-      run: cargo build --verbose --release
+      run: |-
+        docker build \
+          --tag "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA" \
+          .
+
+    # Push the Docker image to Google Container Registry
+    - name: Publish
+      run: |-
+        docker push "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA"
+
+    # Deploy the Docker image to Google Cloud Run
+    # - name: Deploy
+    #   uses: 'google-github-actions/deploy-cloudrun@v1'
+    #   with:
+    #     service: 'dummy-api'
+    #     image: 'gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA'
+    #     flags: '--platform=managed --port=3030 --region=asia-southeast1 --allow-unauthenticated --command=./dummy-api'

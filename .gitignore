@@ -27,3 +27,9 @@ Cargo.lock
 
 # MacOS
 .DS_Store
+
+# Credentials
+sharpit-dev.json
+
+# Binary
+dummy-api

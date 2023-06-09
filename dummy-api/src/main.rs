@@ -2,6 +2,7 @@ use std::env;
 use warp::Filter;
 use dummy_api::{auth, config, profile, models};
 use lazy_static::lazy_static;
+use hex;
 
 #[tokio::main]
 async fn main() {
@@ -13,7 +14,8 @@ async fn main() {
 
     lazy_static! {
         static ref SECRET_KEY: String = {
-            String::from_utf8(auth::generate_secret_key(32)).unwrap()
+            let key = auth::generate_secret_key(32);
+            hex::encode(key)
         };
     }
 
@@ -46,7 +48,7 @@ async fn main() {
     // View access logs by setting `RUST_LOG=auth`.
     let routes = api.with(cors).with(warp::log("auth"));
 
-    let host = [127, 0, 0, 1];
+    let host = [0, 0, 0, 0];
     let port = 3030;
 
     let host_string = host
