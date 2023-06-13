@@ -82,3 +82,50 @@ pub mod profile {
         Ok(warp::reply::with_status(json, StatusCode::CREATED))
     }
 }
+
+pub mod course {
+    use crate::models::course::{Db, Course};
+    use crate::models::Response;
+    use serde_json::json;
+    use std::convert::Infallible;
+    use std::convert::TryFrom;
+    use warp::http::StatusCode;
+
+    pub async fn create(mut course: Course, db: Db) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("course_create: {:?}", course);
+
+        let mut vec = db.lock().await;
+
+        match u8::try_from(vec.len()) {
+            Ok(v) => course.id = v + 1,
+            Err(_) => {
+                let json = warp::reply::json(&Response {
+                    data: json!(null),
+                    error: json!("Unable to provide course ID."),
+                });
+                return Ok(warp::reply::with_status(
+                    json,
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                ));
+            }
+        }
+
+        for existing in vec.iter() {
+            if existing.title == course.title {
+                let json = warp::reply::json(&Response {
+                    data: json!(null),
+                    error: json!("Title is no longer available!"),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::BAD_REQUEST));
+            }
+        }
+
+        vec.push(course.clone());
+
+        let json = warp::reply::json(&Response {
+            data: json!(course),
+            error: json!(null),
+        });
+        Ok(warp::reply::with_status(json, StatusCode::CREATED))
+    }
+}

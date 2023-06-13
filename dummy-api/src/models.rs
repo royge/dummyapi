@@ -149,6 +149,9 @@ pub mod course {
 
         #[serde(default)]
         pub description: String,
+
+        #[serde(default)]
+        pub creator_id: u8,
     }
 
     impl Course {
@@ -168,6 +171,11 @@ pub mod course {
 
         pub fn with_description(mut self, value: String) -> Course {
             self.description = value;
+            self
+        }
+
+        pub fn with_creator_id(mut self, value: u8) -> Course {
+            self.creator_id = value;
             self
         }
     }

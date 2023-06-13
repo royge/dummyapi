@@ -2,17 +2,19 @@ use warp::http::StatusCode;
 use warp::test::request;
 
 use dummy_api::{
-    auth,
+    auth, config, course as course_filter,
+    models::course::{self, Course},
     models::profile::{self, Credentials, Kind, Profile},
     profile as profile_filter,
-    config,
 };
 
 #[tokio::test]
 async fn test_login() {
-    config::CONFIG.set(config::Config{
-        jwt_secret: "secret_key".as_bytes(),
-    }).expect("Error setting application configuration.");
+    config::CONFIG
+        .set(config::Config {
+            jwt_secret: "secret_key".as_bytes(),
+        })
+        .expect("Error setting application configuration.");
 
     let db = profile::new_db();
     let profile = Profile::new()
@@ -90,4 +92,45 @@ async fn test_create_profile() {
         resp.body(),
         "{\"error\":\"Username is no longer available!\"}"
     );
+}
+
+#[tokio::test]
+async fn test_create_course() {
+    let db = course::new_db();
+
+    let api = course_filter::courses(db);
+
+    let resp = request()
+        .method("POST")
+        .path("/courses")
+        .json(
+            &Course::new()
+                .with_title(String::from("Rust in Action"))
+                .with_description(String::from(
+                    "The most recommended training for Rust developers.",
+                ))
+                .with_creator_id(1),
+        )
+        .reply(&api)
+        .await;
+
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    assert_eq!(resp.body(), "{\"data\":{\"creator_id\":1,\"description\":\"The most recommended training for Rust developers.\",\"id\":1,\"title\":\"Rust in Action\"}}");
+
+    let resp = request()
+        .method("POST")
+        .path("/courses")
+        .json(
+            &Course::new()
+                .with_title(String::from("Rust in Action"))
+                .with_description(String::from(
+                    "The most recommended training for Rust developers.",
+                ))
+                .with_creator_id(1),
+        )
+        .reply(&api)
+        .await;
+
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(resp.body(), "{\"error\":\"Title is no longer available!\"}");
 }
