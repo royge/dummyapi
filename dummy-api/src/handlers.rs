@@ -18,6 +18,7 @@ pub mod auth {
                     data: json!({
                         "id": account.id,
                         "token": generate_token(account.id).unwrap(),
+                        "role": account.kind,
                     }),
                     error: json!(null),
                 });
