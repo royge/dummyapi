@@ -111,7 +111,7 @@ pub mod course {
         }
 
         match user.role {
-            profile::Kind::Trainee => {
+            profile::Kind::Trainee | profile::Kind::Mentor => {
                 let json = warp::reply::json(&Response {
                     data: json!(null),
                     error: json!("Forbidden!"),
