@@ -1,4 +1,4 @@
-use serde_derive::{Serialize};
+use serde_derive::Serialize;
 use serde_json::Value;
 
 #[derive(Serialize)]
@@ -15,6 +15,7 @@ pub mod profile {
     use serde_derive::{Deserialize, Serialize};
     use std::sync::Arc;
     use tokio::sync::Mutex;
+    use std::error::Error;
 
     pub type Db = Arc<Mutex<Vec<Profile>>>;
 
@@ -129,6 +130,18 @@ pub mod profile {
         for profs in list {
             vec.push(profs.clone());
         }
+    }
+
+    pub async fn get_kind(db: Db, id: u8) -> Result<Kind, Box<dyn Error>> {
+        let vec = db.lock().await;
+
+        for prof in vec.iter() {
+            if prof.id == id {
+                return Ok(prof.kind.clone());
+            }
+        }
+
+        Err("invalid role".into())
     }
 }
 

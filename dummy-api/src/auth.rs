@@ -1,30 +1,33 @@
 use super::config::{Config, CONFIG};
 use super::handlers;
-use super::models::profile::{Credentials, Db};
+use super::models::profile::{get_kind, Credentials, Db, Kind};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::Infallible;
+use tokio::sync::OnceCell;
 use warp::{Filter, Rejection};
 
+// Initialize and access the configuration
+pub static DB: OnceCell<Db> = OnceCell::const_new();
+
 pub fn auth(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    login(db)
+    let _ = DB.set(db.clone());
+
+    login()
 }
 
-pub fn login(
-    db: Db,
-) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+pub fn login() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("auth")
         .and(warp::post())
         .and(json_body())
-        .and(with_db(db))
+        // .and(with_db(db))
         .and_then(handlers::auth::login)
 }
 
-fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
-    warp::any().map(move || db.clone())
-}
+// fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
+//     warp::any().map(move || db.clone())
+// }
 
 fn json_body() -> impl Filter<Extract = (Credentials,), Error = warp::Rejection> + Clone {
     // When accepting a body, we want a JSON body
@@ -36,6 +39,12 @@ fn json_body() -> impl Filter<Extract = (Credentials,), Error = warp::Rejection>
 pub struct Claims {
     user_id: u8,
     exp: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct User {
+    pub id: u8,
+    pub role: Kind,
 }
 
 pub fn generate_token(user_id: u8) -> Result<String, Box<dyn std::error::Error>> {
@@ -83,17 +92,34 @@ fn decode_token(token: &str) -> Result<u8, Rejection> {
     }
 }
 
-pub fn with_auth() -> impl Filter<Extract = (u8,), Error = Rejection> + Clone {
+pub fn with_auth() -> impl Filter<Extract = (User,), Error = Rejection> + Clone {
     warp::header::<String>("Authorization")
         .and_then(|auth_header: String| async move {
             let token = auth_header.replace("Bearer ", "");
 
             match decode_token(&token) {
-                Ok(user_id) => Ok(user_id),
+                Ok(user_id) => {
+                    let db = DB.get().expect("No configured DB.");
+                    if let Ok(kind) = get_kind(db.clone(), user_id).await {
+                        return Ok(User {
+                            id: user_id,
+                            role: kind,
+                        });
+                    }
+                    Ok(User {
+                        id: user_id,
+                        role: Kind::Trainee,
+                    })
+                }
                 Err(_) => Err(warp::reject()),
             }
         })
-        .or_else(|_| async { Ok::<_, warp::Rejection>((0,)) })
+        .or_else(|_| async {
+            Ok::<_, warp::Rejection>((User {
+                id: 0,
+                role: Kind::Trainee,
+            },))
+        })
 }
 
 #[tokio::test]

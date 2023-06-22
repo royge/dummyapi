@@ -1,8 +1,8 @@
 use serde_json::Value;
+use std::str::from_utf8;
 use warp::http::StatusCode;
 use warp::test::request;
 use warp::Filter;
-use std::str::from_utf8;
 
 use dummy_api::{
     auth, config, course as course_filter,
@@ -13,16 +13,16 @@ use dummy_api::{
 
 #[tokio::test]
 async fn test_login() {
-    let _ = config::CONFIG
-        .set(config::Config {
-            jwt_secret: "secret_key".as_bytes(),
-        });
+    let _ = config::CONFIG.set(config::Config {
+        jwt_secret: "secret_key".as_bytes(),
+    });
 
     let db = profile::new_db();
     let profile = Profile::new()
         .with_id(123)
         .with_username(String::from("mara"))
-        .with_password(String::from("secret"));
+        .with_password(String::from("secret"))
+        .with_kind(Kind::Admin);
 
     profile::initialize(db.clone(), &[profile]).await;
 
@@ -98,20 +98,26 @@ async fn test_create_profile() {
 
 #[tokio::test]
 async fn test_create_course() {
-    let _ = config::CONFIG
-        .set(config::Config {
-            jwt_secret: "secret_key".as_bytes(),
-        });
+    let _ = config::CONFIG.set(config::Config {
+        jwt_secret: "secret_key".as_bytes(),
+    });
 
     let db = course::new_db();
     let profile_db = profile::new_db();
 
-    let profile = Profile::new()
+    let admin = Profile::new()
         .with_id(123)
         .with_username(String::from("mara"))
-        .with_password(String::from("secret"));
+        .with_password(String::from("secret"))
+        .with_kind(Kind::Admin);
 
-    profile::initialize(profile_db.clone(), &[profile]).await;
+    let trainee = Profile::new()
+        .with_id(124)
+        .with_username(String::from("dara"))
+        .with_password(String::from("secret"))
+        .with_kind(Kind::Trainee);
+
+    profile::initialize(profile_db.clone(), &[admin, trainee]).await;
 
     let api = auth::auth(profile_db.clone()).or(course_filter::courses(db));
 
@@ -132,7 +138,7 @@ async fn test_create_course() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(resp.body(), "{\"error\":\"Not authorized!\"}");
 
-    // Login
+    // admin login
     let resp = request()
         .method("POST")
         .path("/auth")
@@ -164,4 +170,36 @@ async fn test_create_course() {
 
     assert_eq!(resp.status(), StatusCode::CREATED);
     // assert_eq!(resp.body(), "{\"error\":\"Title is no longer available!\"}");
+
+    // trainee login
+    let resp = request()
+        .method("POST")
+        .path("/auth")
+        .json(&Credentials {
+            username: String::from("dara"),
+            password: String::from("secret"),
+        })
+        .reply(&api)
+        .await;
+
+    let data = from_utf8(resp.body()).unwrap();
+    let value: Value = serde_json::from_str(data).unwrap();
+    let authorization = format!("Bearer {}", value["data"]["token"]);
+
+    let resp = request()
+        .method("POST")
+        .header("Authorization", authorization)
+        .path("/courses")
+        .json(
+            &Course::new()
+                .with_title(String::from("Rust in Actions"))
+                .with_description(String::from(
+                    "The most recommended training for Rust developers.",
+                ))
+                .with_creator_id(1),
+        )
+        .reply(&api)
+        .await;
+
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
 }

@@ -1,11 +1,13 @@
+use super::auth;
 use super::handlers;
 use super::models::course::{Course, Db};
-use super::auth;
 use std::convert::Infallible;
 use warp::Filter;
 
-pub fn courses(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    create(db)
+pub fn courses(
+    db: Db,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    create(db.clone()).or(update(db))
 }
 
 pub fn create(
@@ -17,6 +19,17 @@ pub fn create(
         .and(with_db(db))
         .and(auth::with_auth())
         .and_then(handlers::course::create)
+}
+
+pub fn update(
+    db: Db,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("courses" / u8)
+        .and(warp::post())
+        .and(json_body())
+        .and(with_db(db))
+        .and(auth::with_auth())
+        .and_then(handlers::course::update)
 }
 
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {

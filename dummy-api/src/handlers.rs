@@ -1,14 +1,15 @@
 pub mod auth {
-    use crate::auth::generate_token;
-    use crate::models::profile::{Credentials, Db};
+    use crate::auth::{ generate_token, DB };
+    use crate::models::profile::{Credentials};
     use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
     use warp::http::StatusCode;
 
-    pub async fn login(credentials: Credentials, db: Db) -> Result<impl warp::Reply, Infallible> {
+    pub async fn login(credentials: Credentials) -> Result<impl warp::Reply, Infallible> {
         log::debug!("auth_login: {:?}", credentials);
 
+        let db = DB.get().expect("No configured DB.");
         let vec = db.lock().await;
 
         for account in vec.iter() {
@@ -85,7 +86,9 @@ pub mod profile {
 }
 
 pub mod course {
+    use crate::auth;
     use crate::models::course::{Course, Db};
+    use crate::models::profile;
     use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
@@ -95,22 +98,30 @@ pub mod course {
     pub async fn create(
         course: Course,
         db: Db,
-        user_id: u8,
+        user: auth::User,
     ) -> Result<impl warp::Reply, Infallible> {
         log::debug!("course_create: {:?}", course);
 
-        if user_id == 0 {
+        if user.id == 0 {
             let json = warp::reply::json(&Response {
                 data: json!(null),
                 error: json!("Not authorized!"),
             });
-            return Ok(warp::reply::with_status(
-                json,
-                StatusCode::UNAUTHORIZED,
-            ));
+            return Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED));
         }
 
-        let mut course = course.with_creator_id(user_id);
+        match user.role {
+            profile::Kind::Trainee => {
+                let json = warp::reply::json(&Response {
+                    data: json!(null),
+                    error: json!("Forbidden!"),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::FORBIDDEN));
+            }
+            _ => {}
+        }
+
+        let mut course = course.with_creator_id(user.id);
 
         let mut vec = db.lock().await;
 
@@ -145,5 +156,41 @@ pub mod course {
             error: json!(null),
         });
         Ok(warp::reply::with_status(json, StatusCode::CREATED))
+    }
+
+    pub async fn update(
+        id: u8,
+        course: Course,
+        db: Db,
+        user: auth::User,
+    ) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("course_create: {:?}", course);
+
+        if user.id == 0 {
+            let json = warp::reply::json(&Response {
+                data: json!(null),
+                error: json!("Not authorized!"),
+            });
+            return Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED));
+        }
+
+        let mut vec = db.lock().await;
+
+        for existing in vec.iter_mut() {
+            if existing.id == id {
+                *existing = course.clone();
+                let json = warp::reply::json(&Response {
+                    data: json!(course),
+                    error: json!(null),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::OK));
+            }
+        }
+
+        let json = warp::reply::json(&Response {
+            data: json!(null),
+            error: json!("Course not found!"),
+        });
+        Ok(warp::reply::with_status(json, StatusCode::NOT_FOUND))
     }
 }
