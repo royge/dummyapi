@@ -25,7 +25,7 @@ pub fn update(
     db: Db,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("courses" / u8)
-        .and(warp::post())
+        .and(warp::put())
         .and(json_body())
         .and(with_db(db))
         .and(auth::with_auth())

@@ -174,13 +174,28 @@ pub mod course {
             return Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED));
         }
 
+        match user.role {
+            profile::Kind::Trainee | profile::Kind::Mentor => {
+                let json = warp::reply::json(&Response {
+                    data: json!(null),
+                    error: json!("Forbidden!"),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::FORBIDDEN));
+            }
+            _ => {}
+        }
+
         let mut vec = db.lock().await;
 
         for existing in vec.iter_mut() {
             if existing.id == id {
+                let creator_id = existing.creator_id;
+
                 *existing = course.clone();
+                existing.creator_id = creator_id;
+
                 let json = warp::reply::json(&Response {
-                    data: json!(course),
+                    data: json!(existing),
                     error: json!(null),
                 });
                 return Ok(warp::reply::with_status(json, StatusCode::OK));
