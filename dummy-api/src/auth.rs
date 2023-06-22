@@ -105,7 +105,6 @@ async fn test_jwt_encode_decode() {
         .expect("Error setting application configuration.");
 
     let token = generate_token(123).unwrap();
-    println!("token: {}", token);
     assert_ne!(token, "");
 
     let user_id = decode_token(&token).unwrap();
