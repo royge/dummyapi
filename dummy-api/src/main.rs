@@ -1,8 +1,8 @@
+use dummy_api::{auth, config, course, models, profile};
+use hex;
+use lazy_static::lazy_static;
 use std::env;
 use warp::Filter;
-use dummy_api::{auth, config, profile, models};
-use lazy_static::lazy_static;
-use hex;
 
 #[tokio::main]
 async fn main() {
@@ -19,26 +19,28 @@ async fn main() {
         };
     }
 
-    config::CONFIG.set(config::Config{
-        jwt_secret: SECRET_KEY.as_bytes(),
-    }).expect("Error setting application configuration.");
+    config::CONFIG
+        .set(config::Config {
+            jwt_secret: SECRET_KEY.as_bytes(),
+        })
+        .expect("Error setting application configuration.");
 
     pretty_env_logger::init();
 
     let db = models::profile::new_db();
+    let course_db = models::course::new_db();
 
-    let profiles = [
-        models::profile::Profile::new()
-            .with_id(1)
-            .with_username(String::from("root"))
-            .with_generated_password()
-            .with_kind(models::profile::Kind::Root),
-    ];
+    let profiles = [models::profile::Profile::new()
+        .with_id(1)
+        .with_username(String::from("root"))
+        .with_generated_password()
+        .with_kind(models::profile::Kind::Root)];
 
     models::profile::initialize(db.clone(), &profiles).await;
 
     let api = auth::auth(db.clone())
-        .or(profile::profiles(db.clone()));
+        .or(profile::profiles(db.clone()))
+        .or(course::courses(course_db.clone()));
 
     let cors = warp::cors()
         .allow_any_origin()

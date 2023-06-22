@@ -84,15 +84,32 @@ pub mod profile {
 }
 
 pub mod course {
-    use crate::models::course::{Db, Course};
+    use crate::models::course::{Course, Db};
     use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;
     use warp::http::StatusCode;
 
-    pub async fn create(mut course: Course, db: Db) -> Result<impl warp::Reply, Infallible> {
+    pub async fn create(
+        course: Course,
+        db: Db,
+        user_id: u8,
+    ) -> Result<impl warp::Reply, Infallible> {
         log::debug!("course_create: {:?}", course);
+
+        if user_id == 0 {
+            let json = warp::reply::json(&Response {
+                data: json!(null),
+                error: json!("Not authorized!"),
+            });
+            return Ok(warp::reply::with_status(
+                json,
+                StatusCode::UNAUTHORIZED,
+            ));
+        }
+
+        let mut course = course.with_creator_id(user_id);
 
         let mut vec = db.lock().await;
 

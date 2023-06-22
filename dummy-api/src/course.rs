@@ -1,5 +1,6 @@
 use super::handlers;
 use super::models::course::{Course, Db};
+use super::auth;
 use std::convert::Infallible;
 use warp::Filter;
 
@@ -14,6 +15,7 @@ pub fn create(
         .and(warp::post())
         .and(json_body())
         .and(with_db(db))
+        .and(auth::with_auth())
         .and_then(handlers::course::create)
 }
 

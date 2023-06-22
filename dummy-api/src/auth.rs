@@ -1,12 +1,12 @@
-use super::config::CONFIG;
+use super::config::{Config, CONFIG};
 use super::handlers;
 use super::models::profile::{Credentials, Db};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
-use serde_derive::Serialize;
-use std::convert::Infallible;
-use warp::Filter;
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rand::Rng;
+use serde_derive::{Deserialize, Serialize};
+use std::convert::Infallible;
+use warp::{Filter, Rejection};
 
 pub fn auth(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     login(db)
@@ -32,7 +32,7 @@ fn json_body() -> impl Filter<Extract = (Credentials,), Error = warp::Rejection>
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Claims {
     user_id: u8,
     exp: i64,
@@ -61,4 +61,53 @@ pub fn generate_secret_key(length: usize) -> Vec<u8> {
     let mut rng = rand::thread_rng();
     let key: Vec<u8> = (0..length).map(|_| rng.gen()).collect();
     key
+}
+
+fn decode_token(token: &str) -> Result<u8, Rejection> {
+    let config = CONFIG
+        .get()
+        .expect("Application is not properly configured.");
+
+    let token = token.replace("\"", "");
+
+    let validation = Validation::new(Algorithm::HS256);
+    let token_message = decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(config.jwt_secret.as_ref()),
+        &validation,
+    );
+
+    match token_message {
+        Ok(data) => Ok(data.claims.user_id),
+        Err(_) => Err(warp::reject()),
+    }
+}
+
+pub fn with_auth() -> impl Filter<Extract = (u8,), Error = Rejection> + Clone {
+    warp::header::<String>("Authorization")
+        .and_then(|auth_header: String| async move {
+            let token = auth_header.replace("Bearer ", "");
+
+            match decode_token(&token) {
+                Ok(user_id) => Ok(user_id),
+                Err(_) => Err(warp::reject()),
+            }
+        })
+        .or_else(|_| async { Ok::<_, warp::Rejection>((0,)) })
+}
+
+#[tokio::test]
+async fn test_jwt_encode_decode() {
+    CONFIG
+        .set(Config {
+            jwt_secret: "secret_key".as_bytes(),
+        })
+        .expect("Error setting application configuration.");
+
+    let token = generate_token(123).unwrap();
+    println!("token: {}", token);
+    assert_ne!(token, "");
+
+    let user_id = decode_token(&token).unwrap();
+    assert_eq!(user_id, 123);
 }
