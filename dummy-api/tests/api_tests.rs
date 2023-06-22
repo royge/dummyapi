@@ -13,11 +13,10 @@ use dummy_api::{
 
 #[tokio::test]
 async fn test_login() {
-    config::CONFIG
+    let _ = config::CONFIG
         .set(config::Config {
             jwt_secret: "secret_key".as_bytes(),
-        })
-        .expect("Error setting application configuration.");
+        });
 
     let db = profile::new_db();
     let profile = Profile::new()
@@ -99,6 +98,11 @@ async fn test_create_profile() {
 
 #[tokio::test]
 async fn test_create_course() {
+    let _ = config::CONFIG
+        .set(config::Config {
+            jwt_secret: "secret_key".as_bytes(),
+        });
+
     let db = course::new_db();
     let profile_db = profile::new_db();
 
