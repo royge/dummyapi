@@ -3,7 +3,6 @@ use warp::http::StatusCode;
 use warp::test::request;
 use warp::Filter;
 use std::str::from_utf8;
-use http::header::{HeaderValue};
 
 use dummy_api::{
     auth, config, course as course_filter,
@@ -146,7 +145,7 @@ async fn test_create_course() {
 
     let resp = request()
         .method("POST")
-        .header("Authorization", HeaderValue::from_str(&authorization).unwrap())
+        .header("Authorization", authorization)
         .path("/courses")
         .json(
             &Course::new()
