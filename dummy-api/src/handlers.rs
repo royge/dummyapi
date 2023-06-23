@@ -192,6 +192,8 @@ pub mod course {
                 let creator_id = existing.creator_id;
 
                 *existing = course.clone();
+
+                existing.id = id;
                 existing.creator_id = creator_id;
 
                 let json = warp::reply::json(&Response {
