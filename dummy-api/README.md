@@ -12,7 +12,7 @@ erase when the server terminates. When there is no request coming in for around
 
    1. User profile registration
    1. User authentication
-   1. _[TODO]_ Creating and updating courses
+   1. Creating and updating courses
    1. _[TODO]_ Creating and updating course topics
 
 ### 1. User Profile Registration
@@ -80,7 +80,7 @@ erase when the server terminates. When there is no request coming in for around
 
    ```json
    {
-      "data": { "id": 10 }
+      "data": { "id": 10, "role": "admin", "token": "[JWT]" }
    }
    ```
 
@@ -89,5 +89,46 @@ erase when the server terminates. When there is no request coming in for around
    ```json
    {
       "error": "Invalid username or password!"
+   }
+   ```
+
+### 3. Course Management
+
+   **API Route**: `/courses`
+
+   **Method**: `POST`
+
+   **Sample Request**
+
+   _Header:_
+
+   ```
+   Authorization: Bearer [JWT]
+   ```
+
+   _Body:_
+
+   ```json
+   {
+      "title": "Programming Fundamentals",
+      "description": "Learn the fundamental concepts of programming."
+   }
+   ```
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": { "id": 10, "title": "Title", "description": "Description", "creator_id": 12 }
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Title is no longer available!"
    }
    ```
