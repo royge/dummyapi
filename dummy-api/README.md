@@ -16,6 +16,7 @@ erase when the server terminates. When there is no request coming in for around
    1. _[TODO]_ Creating and updating course topics
 
 ### 1. User Profile Registration
+--------------------------------
 
    **API Route**: `/profiles`
 
@@ -60,6 +61,7 @@ erase when the server terminates. When there is no request coming in for around
    - `student` - If you want to study in the organization.
 
 ### 2. User Authentication
+--------------------------
 
    **API Route**: `/auth`
 
@@ -93,8 +95,9 @@ erase when the server terminates. When there is no request coming in for around
    ```
 
 ### 3. Course Management
+------------------------
 
-   #### Creating A New Course
+   ### 3.1 Creating A New Course
 
    **API Route**: `/courses`
 
@@ -135,7 +138,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   #### Updating Existing Course
+   ### 3.2 Updating Existing Course
 
    **API Route**: `/courses/{course-id}`
 
