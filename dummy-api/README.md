@@ -94,9 +94,52 @@ erase when the server terminates. When there is no request coming in for around
 
 ### 3. Course Management
 
+   #### Creating A New Course
+
    **API Route**: `/courses`
 
    **Method**: `POST`
+
+   **Sample Request**
+
+   _Header:_
+
+   ```
+   Authorization: Bearer [JWT]
+   ```
+
+   _Body:_
+
+   ```json
+   {
+      "title": "Programming Fundamentals",
+      "description": "Learn the fundamental concepts of programming."
+   }
+   ```
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": { "id": 10, "title": "Title", "description": "Description", "creator_id": 12 }
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Title is no longer available!"
+   }
+   ```
+
+   #### Updating Existing Course
+
+   **API Route**: `/courses/{course-id}`
+
+   **Method**: `PUT`
 
    **Sample Request**
 
