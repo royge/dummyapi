@@ -1,7 +1,8 @@
 use super::handlers;
-use super::models::profile::{Profile, Db};
+use super::models::profile::{Profile};
 use std::convert::Infallible;
 use warp::Filter;
+use super::store::Db;
 
 pub fn profiles(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     create(db)

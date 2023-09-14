@@ -1,6 +1,6 @@
 pub mod auth {
-    use crate::auth::{ generate_token, DB };
-    use crate::models::profile::{Credentials};
+    use crate::auth::{generate_token, DB};
+    use crate::models::profile::{Credentials, Profile, PROFILES};
     use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
@@ -10,9 +10,12 @@ pub mod auth {
         log::debug!("auth_login: {:?}", credentials);
 
         let db = DB.get().expect("No configured DB.");
-        let vec = db.lock().await;
 
-        for account in vec.iter() {
+        let db = db.lock().await;
+        let docs = db.get(PROFILES).unwrap();
+
+        for doc in docs.iter() {
+            let account: Profile = bincode::deserialize(&doc).unwrap();
             if account.username == credentials.username && account.password == credentials.password
             {
                 let json = warp::reply::json(&Response {
@@ -36,8 +39,9 @@ pub mod auth {
 }
 
 pub mod profile {
-    use crate::models::profile::{Db, Profile};
+    use crate::models::profile::{Profile, PROFILES};
     use crate::models::Response;
+    use crate::store::Db;
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;
@@ -46,9 +50,11 @@ pub mod profile {
     pub async fn create(mut profile: Profile, db: Db) -> Result<impl warp::Reply, Infallible> {
         log::debug!("profile_create: {:?}", profile);
 
-        let mut vec = db.lock().await;
+        let mut db = db.lock().await;
 
-        match u8::try_from(vec.len()) {
+        let docs: &mut Vec<Vec<u8>> = db.get_mut(PROFILES).unwrap();
+
+        match u8::try_from(docs.len()) {
             Ok(v) => profile.id = v + 1,
             Err(_) => {
                 let json = warp::reply::json(&Response {
@@ -62,7 +68,8 @@ pub mod profile {
             }
         }
 
-        for account in vec.iter() {
+        for doc in docs.iter() {
+            let account: Profile = bincode::deserialize(&doc).unwrap();
             if account.username == profile.username {
                 let json = warp::reply::json(&Response {
                     data: json!(null),
@@ -75,7 +82,8 @@ pub mod profile {
         let id = profile.id;
         let kind = profile.kind.clone();
 
-        vec.push(profile);
+        let data: Vec<u8> = bincode::serialize(&profile).unwrap();
+        docs.push(data);
 
         let json = warp::reply::json(&Response {
             data: json!({ "id": id, "type": kind }),
@@ -87,9 +95,10 @@ pub mod profile {
 
 pub mod course {
     use crate::auth;
-    use crate::models::course::{Course, Db};
+    use crate::models::course::{Course, COURSES};
     use crate::models::profile;
     use crate::models::Response;
+    use crate::store::Db;
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;
@@ -123,9 +132,11 @@ pub mod course {
 
         let mut course = course.with_creator_id(user.id);
 
-        let mut vec = db.lock().await;
+        let mut db = db.lock().await;
 
-        match u8::try_from(vec.len()) {
+        let docs: &mut Vec<Vec<u8>> = db.get_mut(COURSES).unwrap();
+
+        match u8::try_from(docs.len()) {
             Ok(v) => course.id = v + 1,
             Err(_) => {
                 let json = warp::reply::json(&Response {
@@ -139,7 +150,8 @@ pub mod course {
             }
         }
 
-        for existing in vec.iter() {
+        for doc in docs.iter() {
+            let existing: Course = bincode::deserialize(&doc).unwrap();
             if existing.title == course.title {
                 let json = warp::reply::json(&Response {
                     data: json!(null),
@@ -149,7 +161,7 @@ pub mod course {
             }
         }
 
-        vec.push(course.clone());
+        docs.push(bincode::serialize(&course).unwrap());
 
         let json = warp::reply::json(&Response {
             data: json!(course),
@@ -185,16 +197,21 @@ pub mod course {
             _ => {}
         }
 
-        let mut vec = db.lock().await;
+        let mut db = db.lock().await;
 
-        for existing in vec.iter_mut() {
+        let docs: &mut Vec<Vec<u8>> = db.get_mut(COURSES).unwrap();
+
+        for doc in docs.iter_mut() {
+            let existing: Course = bincode::deserialize(&doc).unwrap();
             if existing.id == id {
                 let creator_id = existing.creator_id;
 
-                *existing = course.clone();
+                let mut existing = course.clone();
 
                 existing.id = id;
                 existing.creator_id = creator_id;
+
+                *doc = bincode::serialize(&existing).unwrap();
 
                 let json = warp::reply::json(&Response {
                     data: json!(existing),

@@ -9,6 +9,7 @@ use dummy_api::{
     models::course::{self, Course},
     models::profile::{self, Credentials, Kind, Profile},
     profile as profile_filter,
+    store,
 };
 
 #[tokio::test]
@@ -17,7 +18,8 @@ async fn test_login() {
         jwt_secret: "secret_key".as_bytes(),
     });
 
-    let db = profile::new_db();
+    let db = store::new_db(vec![profile::PROFILES]).await;
+
     let profile = Profile::new()
         .with_id(123)
         .with_username(String::from("mara"))
@@ -57,7 +59,7 @@ async fn test_login() {
 
 #[tokio::test]
 async fn test_create_profile() {
-    let db = profile::new_db();
+    let db = store::new_db(vec![profile::PROFILES]).await;
 
     let api = profile_filter::profiles(db);
 
@@ -102,8 +104,10 @@ async fn test_create_course() {
         jwt_secret: "secret_key".as_bytes(),
     });
 
-    let db = course::new_db();
-    let profile_db = profile::new_db();
+    let db = store::new_db(vec![
+        profile::PROFILES,
+        course::COURSES,
+    ]).await;
 
     let admin = Profile::new()
         .with_id(123)
@@ -117,9 +121,9 @@ async fn test_create_course() {
         .with_password(String::from("secret"))
         .with_kind(Kind::Trainee);
 
-    profile::initialize(profile_db.clone(), &[admin, trainee]).await;
+    profile::initialize(db.clone(), &[admin, trainee]).await;
 
-    let api = auth::auth(profile_db.clone()).or(course_filter::courses(db));
+    let api = auth::auth(db.clone()).or(course_filter::courses(db));
 
     let resp = request()
         .method("POST")
@@ -209,8 +213,10 @@ async fn test_update_course() {
         jwt_secret: "secret_key".as_bytes(),
     });
 
-    let db = course::new_db();
-    let profile_db = profile::new_db();
+    let db = store::new_db(vec![
+        profile::PROFILES,
+        course::COURSES,
+    ]).await;
 
     let admin = Profile::new()
         .with_id(123)
@@ -224,9 +230,9 @@ async fn test_update_course() {
         .with_password(String::from("secret"))
         .with_kind(Kind::Trainee);
 
-    profile::initialize(profile_db.clone(), &[admin, trainee]).await;
+    profile::initialize(db.clone(), &[admin, trainee]).await;
 
-    let api = auth::auth(profile_db.clone()).or(course_filter::courses(db));
+    let api = auth::auth(db.clone()).or(course_filter::courses(db));
 
     // admin login
     let resp = request()

@@ -1,12 +1,13 @@
-use super::config::{Config, CONFIG};
+use super::config::{CONFIG};
 use super::handlers;
-use super::models::profile::{get_kind, Credentials, Db, Kind};
+use super::models::profile::{get_kind, Credentials, Kind};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
 use tokio::sync::OnceCell;
 use warp::{Filter, Rejection};
+use super::store::{Db};
 
 // Initialize and access the configuration
 pub static DB: OnceCell<Db> = OnceCell::const_new();
@@ -124,6 +125,8 @@ pub fn with_auth() -> impl Filter<Extract = (User,), Error = Rejection> + Clone 
 
 #[tokio::test]
 async fn test_jwt_encode_decode() {
+    use super::config::{Config, CONFIG};
+
     CONFIG
         .set(Config {
             jwt_secret: "secret_key".as_bytes(),

@@ -1,8 +1,9 @@
 use super::auth;
 use super::handlers;
-use super::models::course::{Course, Db};
+use super::models::course::{Course};
 use std::convert::Infallible;
 use warp::Filter;
+use super::store::Db;
 
 pub fn courses(
     db: Db,

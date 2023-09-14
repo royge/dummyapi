@@ -1,5 +1,6 @@
 use serde_derive::Serialize;
 use serde_json::Value;
+use super::store::Db;
 
 #[derive(Serialize)]
 pub struct Response {
@@ -13,11 +14,10 @@ pub struct Response {
 pub mod profile {
     use rand::Rng;
     use serde_derive::{Deserialize, Serialize};
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
     use std::error::Error;
+    use bincode;
 
-    pub type Db = Arc<Mutex<Vec<Profile>>>;
+    pub const PROFILES: &str = "profiles";
 
     #[derive(Default, Debug, Deserialize, Serialize, Clone)]
     pub struct Profile {
@@ -120,22 +120,22 @@ pub mod profile {
         pub password: String,
     }
 
-    pub fn new_db() -> Db {
-        Arc::new(Mutex::new(Vec::new()))
-    }
+    pub async fn initialize(db: super::Db, list: &[Profile]) {
+        let mut db = db.lock().await;
 
-    pub async fn initialize(db: Db, list: &[Profile]) {
-        let mut vec = db.lock().await;
-
+        let docs: &mut Vec<Vec<u8>> = db.get_mut(PROFILES).unwrap();
         for profs in list {
-            vec.push(profs.clone());
+            let data: Vec<u8> = bincode::serialize(&profs).unwrap();
+            docs.push(data);
         }
     }
 
-    pub async fn get_kind(db: Db, id: u8) -> Result<Kind, Box<dyn Error>> {
-        let vec = db.lock().await;
+    pub async fn get_kind(db: super::Db, id: u8) -> Result<Kind, Box<dyn Error>> {
+        let db = db.lock().await;
 
-        for prof in vec.iter() {
+        let docs: &Vec<Vec<u8>> = db.get(PROFILES).unwrap();
+        for data in docs.iter() {
+            let prof: Profile = bincode::deserialize(&data).unwrap();
             if prof.id == id {
                 return Ok(prof.kind.clone());
             }
@@ -147,10 +147,8 @@ pub mod profile {
 
 pub mod course {
     use serde_derive::{Deserialize, Serialize};
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
 
-    pub type Db = Arc<Mutex<Vec<Course>>>;
+    pub const COURSES: &str = "courses";
 
     #[derive(Default, Debug, Deserialize, Serialize, Clone)]
     pub struct Course {
@@ -191,9 +189,5 @@ pub mod course {
             self.creator_id = value;
             self
         }
-    }
-
-    pub fn new_db() -> Db {
-        Arc::new(Mutex::new(Vec::new()))
     }
 }

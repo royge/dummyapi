@@ -1,4 +1,4 @@
-use dummy_api::{auth, config, course, models, profile};
+use dummy_api::{auth, config, course, models, profile, store};
 use hex;
 use lazy_static::lazy_static;
 use std::env;
@@ -27,8 +27,10 @@ async fn main() {
 
     pretty_env_logger::init();
 
-    let db = models::profile::new_db();
-    let course_db = models::course::new_db();
+    let db = store::new_db(vec![
+        models::profile::PROFILES,
+        models::course::COURSES,
+    ]).await;
 
     let profiles = [models::profile::Profile::new()
         .with_id(1)
@@ -40,7 +42,7 @@ async fn main() {
 
     let api = auth::auth(db.clone())
         .or(profile::profiles(db.clone()))
-        .or(course::courses(course_db.clone()));
+        .or(course::courses(db.clone()));
 
     let cors = warp::cors()
         .allow_any_origin()
