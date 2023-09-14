@@ -1,15 +1,14 @@
 pub mod auth {
-    use crate::auth::{generate_token, DB};
+    use crate::auth::{generate_token};
     use crate::models::profile::{Credentials, Profile, PROFILES};
     use crate::models::Response;
     use serde_json::json;
     use std::convert::Infallible;
     use warp::http::StatusCode;
+    use crate::store::Db;
 
-    pub async fn login(credentials: Credentials) -> Result<impl warp::Reply, Infallible> {
+    pub async fn login(credentials: Credentials, db: Db) -> Result<impl warp::Reply, Infallible> {
         log::debug!("auth_login: {:?}", credentials);
-
-        let db = DB.get().expect("No configured DB.");
 
         let db = db.lock().await;
         let docs = db.get(PROFILES).unwrap();

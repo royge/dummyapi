@@ -17,8 +17,8 @@ pub fn create(
     warp::path!("courses")
         .and(warp::post())
         .and(json_body())
-        .and(with_db(db))
-        .and(auth::with_auth())
+        .and(with_db(db.clone()))
+        .and(auth::with_auth(db.clone()))
         .and_then(handlers::course::create)
 }
 
@@ -28,8 +28,8 @@ pub fn update(
     warp::path!("courses" / u8)
         .and(warp::put())
         .and(json_body())
-        .and(with_db(db))
-        .and(auth::with_auth())
+        .and(with_db(db.clone()))
+        .and(auth::with_auth(db.clone()))
         .and_then(handlers::course::update)
 }
 

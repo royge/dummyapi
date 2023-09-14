@@ -1,34 +1,31 @@
-use super::config::{CONFIG};
+use super::config::CONFIG;
 use super::handlers;
 use super::models::profile::{get_kind, Credentials, Kind};
+use super::store::Db;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
-use tokio::sync::OnceCell;
+use std::convert::Infallible;
 use warp::{Filter, Rejection};
-use super::store::{Db};
-
-// Initialize and access the configuration
-pub static DB: OnceCell<Db> = OnceCell::const_new();
 
 pub fn auth(db: Db) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    let _ = DB.set(db.clone());
-
-    login()
+    login(db.clone())
 }
 
-pub fn login() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+pub fn login(
+    db: Db,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("auth")
         .and(warp::post())
         .and(json_body())
-        // .and(with_db(db))
+        .and(with_db(db))
         .and_then(handlers::auth::login)
 }
 
-// fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
-//     warp::any().map(move || db.clone())
-// }
+fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
+    warp::any().map(move || db.clone())
+}
 
 fn json_body() -> impl Filter<Extract = (Credentials,), Error = warp::Rejection> + Clone {
     // When accepting a body, we want a JSON body
@@ -93,26 +90,29 @@ fn decode_token(token: &str) -> Result<u8, Rejection> {
     }
 }
 
-pub fn with_auth() -> impl Filter<Extract = (User,), Error = Rejection> + Clone {
+pub fn with_auth(db: Db) -> impl Filter<Extract = (User,), Error = Rejection> + Clone {
     warp::header::<String>("Authorization")
-        .and_then(|auth_header: String| async move {
-            let token = auth_header.replace("Bearer ", "");
+        .and_then(move |auth_header: String| {
+            let db = db.clone();
+            async move {
+                let token = auth_header.replace("Bearer ", "");
 
-            match decode_token(&token) {
-                Ok(user_id) => {
-                    let db = DB.get().expect("No configured DB.");
-                    if let Ok(kind) = get_kind(db.clone(), user_id).await {
-                        return Ok(User {
+                match decode_token(&token) {
+                    Ok(user_id) => {
+                        let db = db.clone();
+                        if let Ok(kind) = get_kind(db.clone(), user_id).await {
+                            return Ok(User {
+                                id: user_id,
+                                role: kind,
+                            });
+                        }
+                        Ok(User {
                             id: user_id,
-                            role: kind,
-                        });
+                            role: Kind::Trainee,
+                        })
                     }
-                    Ok(User {
-                        id: user_id,
-                        role: Kind::Trainee,
-                    })
+                    Err(_) => Err(warp::reject()),
                 }
-                Err(_) => Err(warp::reject()),
             }
         })
         .or_else(|_| async {
