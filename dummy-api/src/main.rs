@@ -27,10 +27,11 @@ async fn main() {
 
     pretty_env_logger::init();
 
-    let db = store::new_db(vec![
+    let collections = vec![
         models::profile::PROFILES,
         models::course::COURSES,
-    ]).await;
+    ];
+    let db = store::new_db(collections).await;
 
     let profiles = [models::profile::Profile::new()
         .with_id(1)
