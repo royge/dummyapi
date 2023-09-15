@@ -13,7 +13,7 @@ pub async fn new_db(collections: Vec<&str>) -> Db {
     let mut _db = clone.lock().await;
 
     for name in collections {
-        _db.entry(name.to_string()).or_insert(Vec::new());
+        _db.insert(name.to_string(), Vec::new());
     }
 
     return db
@@ -21,12 +21,16 @@ pub async fn new_db(collections: Vec<&str>) -> Db {
 
 #[tokio::test]
 async fn test_new_db() {
-    let db = new_db(vec!["test"]);
-    let db = db.await;
-    let mut db = db.lock().await;
-    assert_eq!(db.get("test"), Some(&vec![]));
+    let name = "test";
+    let collections = vec![name];
 
-    let docs: &mut Vec<Vec<u8>> = db.get_mut("test").unwrap();
+    let db = new_db(collections);
+    let db = db.await;
+
+    let mut db = db.lock().await;
+    assert_eq!(db.get(name), Some(&vec![]));
+
+    let docs: &mut Vec<Vec<u8>> = db.get_mut(name).unwrap();
     docs.push(vec![4]);
-    assert_eq!(db.get("test"), Some(&vec![vec![4]]));
+    assert_eq!(db.get(name), Some(&vec![vec![4]]));
 }
