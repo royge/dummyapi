@@ -247,7 +247,7 @@ pub mod course {
 }
 
 pub mod topic {
-    use crate::auth;
+    use crate::{auth, course};
     use crate::models::profile;
     use crate::models::topic::{Topic, TOPICS};
     use crate::models::Response;
@@ -276,6 +276,10 @@ pub mod topic {
             _ => {}
         }
 
+        if course::get(topic.course_id, db.clone()).await.is_err() {
+            return apiresponse::bad_request("Course not found!");
+        }
+
         let mut topic = topic.with_creator_id(user.id);
 
         let mut db = db.lock().await;
@@ -293,7 +297,11 @@ pub mod topic {
 
         for doc in docs.iter() {
             let existing: Topic = bincode::deserialize(&doc).unwrap();
-            if existing.title == topic.title {
+
+            let same_course = existing.course_id == topic.course_id;
+            let same_title = existing.title == topic.title;
+
+            if same_course && same_title {
                 return apiresponse::bad_request("Title is no longer available!");
             }
         }

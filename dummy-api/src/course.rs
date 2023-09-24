@@ -1,6 +1,6 @@
 use super::auth;
 use super::handlers;
-use super::models::course::{Course};
+use super::models::course::{self, Course};
 use std::convert::Infallible;
 use warp::Filter;
 use super::store::Db;
@@ -41,4 +41,22 @@ fn json_body() -> impl Filter<Extract = (Course,), Error = warp::Rejection> + Cl
     // When accepting a body, we want a JSON body
     // (and to reject huge payloads)...
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+}
+
+pub async fn get(id: u8, db: Db) -> Result<Course, Box<dyn std::error::Error>> {
+    if id == 0 {
+        return Err("Course ID is required!".into());
+    }
+
+    let db = db.lock().await;
+
+    let docs: &Vec<Vec<u8>> = db.get(course::COURSES).unwrap();
+    for data in docs.iter() {
+        let course: Course = bincode::deserialize(&data).unwrap();
+        if course.id == id {
+            return Ok(course);
+        }
+    }
+
+    Err("invalid course".into())
 }
