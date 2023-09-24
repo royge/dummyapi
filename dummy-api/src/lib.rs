@@ -5,3 +5,4 @@ pub mod profile;
 pub mod config;
 pub mod course;
 pub mod store;
+pub mod topic;

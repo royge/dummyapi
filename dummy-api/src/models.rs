@@ -191,3 +191,58 @@ pub mod course {
         }
     }
 }
+
+pub mod topic {
+    use serde_derive::{Deserialize, Serialize};
+
+    pub const TOPICS: &str = "topics";
+
+    #[derive(Default, Debug, Deserialize, Serialize, Clone)]
+    pub struct Topic {
+        #[serde(default)]
+        pub id: u8,
+
+        #[serde(default)]
+        pub title: String,
+
+        #[serde(default)]
+        pub description: String,
+
+        #[serde(default)]
+        pub creator_id: u8,
+
+        #[serde(default)]
+        pub course_id: u8,
+    }
+
+    impl Topic {
+        pub fn new() -> Topic {
+            Topic::default()
+        }
+
+        pub fn with_id(mut self, value: u8) -> Topic {
+            self.id = value;
+            self
+        }
+
+        pub fn with_title(mut self, value: String) -> Topic {
+            self.title = value;
+            self
+        }
+
+        pub fn with_description(mut self, value: String) -> Topic {
+            self.description = value;
+            self
+        }
+
+        pub fn with_creator_id(mut self, value: u8) -> Topic {
+            self.creator_id = value;
+            self
+        }
+
+        pub fn with_course_id(mut self, value: u8) -> Topic {
+            self.course_id = value;
+            self
+        }
+    }
+}
