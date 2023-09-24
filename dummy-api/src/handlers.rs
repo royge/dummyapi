@@ -205,7 +205,7 @@ pub mod course {
         db: Db,
         user: auth::User,
     ) -> Result<impl warp::Reply, Infallible> {
-        log::debug!("course_create: {:?}", course);
+        log::debug!("course_update: {:?}", course);
 
         if user.id == 0 {
             return apiresponse::unauthorized();
@@ -321,7 +321,7 @@ pub mod topic {
         db: Db,
         user: auth::User,
     ) -> Result<impl warp::Reply, Infallible> {
-        log::debug!("topic_create: {:?}", topic);
+        log::debug!("topic_update: {:?}", topic);
 
         if user.id == 0 {
             return apiresponse::unauthorized();
@@ -342,11 +342,13 @@ pub mod topic {
             let existing: Topic = bincode::deserialize(&doc).unwrap();
             if existing.id == id {
                 let creator_id = existing.creator_id;
+                let course_id = existing.course_id;
 
                 let mut existing = topic.clone();
 
                 existing.id = id;
                 existing.creator_id = creator_id;
+                existing.course_id = course_id;
 
                 *doc = bincode::serialize(&existing).unwrap();
 
