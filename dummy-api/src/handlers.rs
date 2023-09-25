@@ -20,7 +20,9 @@ pub mod apiresponse {
         return Ok(warp::reply::with_status(json, StatusCode::FORBIDDEN));
     }
 
-    pub fn internal_server_error(message:&str) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+    pub fn internal_server_error(
+        message: &str,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
         let json = warp::reply::json(&Response {
             data: json!(null),
             error: json!(message),
@@ -31,26 +33,24 @@ pub mod apiresponse {
         ));
     }
 
-    pub fn bad_request(message:&str) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+    pub fn bad_request(
+        message: &str,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
         let json = warp::reply::json(&Response {
             data: json!(null),
             error: json!(message),
         });
-        return Ok(warp::reply::with_status(
-            json,
-            StatusCode::BAD_REQUEST,
-        ));
+        return Ok(warp::reply::with_status(json, StatusCode::BAD_REQUEST));
     }
 
-    pub fn not_found(message:&str) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+    pub fn not_found(
+        message: &str,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
         let json = warp::reply::json(&Response {
             data: json!(null),
             error: json!(message),
         });
-        return Ok(warp::reply::with_status(
-            json,
-            StatusCode::NOT_FOUND,
-        ));
+        return Ok(warp::reply::with_status(json, StatusCode::NOT_FOUND));
     }
 }
 
@@ -94,6 +94,7 @@ pub mod auth {
 }
 
 pub mod profile {
+    use crate::handlers::apiresponse;
     use crate::models::profile::{Profile, PROFILES};
     use crate::models::Response;
     use crate::store::Db;
@@ -101,7 +102,6 @@ pub mod profile {
     use std::convert::Infallible;
     use std::convert::TryFrom;
     use warp::http::StatusCode;
-    use crate::handlers::apiresponse;
 
     pub async fn create(mut profile: Profile, db: Db) -> Result<impl warp::Reply, Infallible> {
         log::debug!("profile_create: {:?}", profile);
@@ -140,6 +140,7 @@ pub mod profile {
 
 pub mod course {
     use crate::auth;
+    use crate::handlers::apiresponse;
     use crate::models::course::{Course, COURSES};
     use crate::models::profile;
     use crate::models::Response;
@@ -148,7 +149,6 @@ pub mod course {
     use std::convert::Infallible;
     use std::convert::TryFrom;
     use warp::http::StatusCode;
-    use crate::handlers::apiresponse;
 
     pub async fn create(
         course: Course,
@@ -177,9 +177,7 @@ pub mod course {
         match u8::try_from(docs.len()) {
             Ok(v) => course.id = v + 1,
             Err(_) => {
-                return apiresponse::internal_server_error(
-                    "Unable to provide course ID."
-                );
+                return apiresponse::internal_server_error("Unable to provide course ID.");
             }
         }
 
@@ -247,16 +245,16 @@ pub mod course {
 }
 
 pub mod topic {
-    use crate::{auth, course};
+    use crate::handlers::apiresponse;
     use crate::models::profile;
     use crate::models::topic::{Topic, TOPICS};
     use crate::models::Response;
     use crate::store::Db;
+    use crate::{auth, course};
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;
     use warp::http::StatusCode;
-    use crate::handlers::apiresponse;
 
     pub async fn create(
         topic: Topic,
@@ -276,7 +274,7 @@ pub mod topic {
             _ => {}
         }
 
-        if course::get(topic.course_id, db.clone()).await.is_err() {
+        if course::get(topic.course_id, &db).await.is_err() {
             return apiresponse::bad_request("Course not found!");
         }
 
@@ -289,9 +287,7 @@ pub mod topic {
         match u8::try_from(docs.len()) {
             Ok(v) => topic.id = v + 1,
             Err(_) => {
-                return apiresponse::internal_server_error(
-                    "Unable to provide topics ID."
-                );
+                return apiresponse::internal_server_error("Unable to provide topics ID.");
             }
         }
 

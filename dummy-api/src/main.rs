@@ -42,7 +42,7 @@ async fn main() {
         .with_generated_password()
         .with_kind(models::profile::Kind::Root)];
 
-    models::profile::initialize(db.clone(), &roots).await;
+    models::profile::initialize(&db, &roots).await;
 
     let api = auth::auth(db.clone())
         .or(profile::profiles(db.clone()))

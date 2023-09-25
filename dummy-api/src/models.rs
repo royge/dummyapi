@@ -120,7 +120,7 @@ pub mod profile {
         pub password: String,
     }
 
-    pub async fn initialize(db: super::Db, list: &[Profile]) {
+    pub async fn initialize<'a>(db: &'a super::Db, list: &[Profile]) {
         let mut db = db.lock().await;
 
         let docs: &mut Vec<Vec<u8>> = db.get_mut(PROFILES).unwrap();
@@ -130,7 +130,7 @@ pub mod profile {
         }
     }
 
-    pub async fn get_kind(db: super::Db, id: u8) -> Result<Kind, Box<dyn Error>> {
+    pub async fn get_kind<'a>(db: &'a super::Db, id: u8) -> Result<Kind, Box<dyn Error>> {
         let db = db.lock().await;
 
         let docs: &Vec<Vec<u8>> = db.get(PROFILES).unwrap();

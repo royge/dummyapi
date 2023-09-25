@@ -99,7 +99,7 @@ pub fn with_auth(db: Db) -> impl Filter<Extract = (User,), Error = Rejection> + 
 
                 match decode_token(&token) {
                     Ok(user_id) => {
-                        if let Ok(kind) = get_kind(db, user_id).await {
+                        if let Ok(kind) = get_kind(&db, user_id).await {
                             return Ok(User {
                                 id: user_id,
                                 role: kind,

@@ -31,7 +31,7 @@ async fn test_login() {
         .with_password(password.clone())
         .with_kind(Kind::Admin);
 
-    profile::initialize(db.clone(), &[admin]).await;
+    profile::initialize(&db, &[admin]).await;
 
     let api = auth::auth(db);
 
@@ -128,7 +128,7 @@ async fn test_create_course() {
         .with_password(String::from("secret"))
         .with_kind(Kind::Trainee);
 
-    profile::initialize(db.clone(), &[admin, trainee]).await;
+    profile::initialize(&db, &[admin, trainee]).await;
 
     let api = auth::auth(db.clone()).or(course_filter::courses(db));
 
@@ -237,7 +237,7 @@ async fn test_update_course() {
         .with_password(String::from("secret"))
         .with_kind(Kind::Trainee);
 
-    profile::initialize(db.clone(), &[admin, trainee]).await;
+    profile::initialize(&db, &[admin, trainee]).await;
 
     let api = auth::auth(db.clone()).or(course_filter::courses(db));
 
@@ -351,7 +351,7 @@ async fn test_create_topic() {
         .with_password(String::from("secret"))
         .with_kind(Kind::Mentor);
 
-    profile::initialize(db.clone(), &[admin, trainee, mentor]).await;
+    profile::initialize(&db, &[admin, trainee, mentor]).await;
 
     let api = auth::auth(db.clone())
         .or(course_filter::courses(db.clone()))
@@ -546,7 +546,7 @@ async fn test_update_topic() {
         .with_password(String::from("secret"))
         .with_kind(Kind::Mentor);
 
-    profile::initialize(db.clone(), &[admin, trainee, mentor]).await;
+    profile::initialize(&db, &[admin, trainee, mentor]).await;
 
     let api = auth::auth(db.clone())
         .or(course_filter::courses(db.clone()))
