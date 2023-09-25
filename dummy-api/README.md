@@ -14,6 +14,8 @@ erase when the server terminates. When there is no request coming in for around
    1. User authentication
    1. Creating and updating courses
    1. Creating and updating course topics
+   1. _[TODO]_ Listing of courses
+   1. _[TODO]_ Listing of course's topics
 
 ### 1. User Profile Registration
 --------------------------------
