@@ -4,24 +4,16 @@ on:
   push:
     branches: [ "main" ]
     paths-ignore:
-      - 'basic-automated-tests/**'
-      - 'basic-automated-tests/*'
-      - 'project/**'
-      - 'project/*'
-      - 'examples/**'
-      - 'examples/*'
+      - 'go-course/**'
+      - 'go-course/*'
       - '*.md'
       - '.github/workflows/node.js.yml'
       - '.gitignore'
   pull_request:
     branches: [ "main" ]
     paths-ignore:
-      - 'basic-automated-tests/**'
-      - 'basic-automated-tests/*'
-      - 'project/**'
-      - 'project/*'
-      - 'examples/**'
-      - 'examples/*'
+      - 'go-course/**'
+      - 'go-course/*'
       - '*.md'
       - '.github/workflows/node.js.yml'
       - '.gitignore'
