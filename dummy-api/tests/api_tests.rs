@@ -22,29 +22,33 @@ async fn test_login() {
 
     let db = store::new_db(vec![profile::PROFILES]).await;
 
-    let profile = Profile::new()
+    let username = String::from("mara");
+    let password = String::from("secret");
+
+    let admin = Profile::new()
         .with_id(123)
-        .with_username(String::from("mara"))
-        .with_password(String::from("secret"))
+        .with_username(username.clone())
+        .with_password(password.clone())
         .with_kind(Kind::Admin);
 
-    profile::initialize(db.clone(), &[profile]).await;
+    profile::initialize(db.clone(), &[admin]).await;
 
     let api = auth::auth(db);
 
+    // login with existing user
     let resp = request()
         .method("POST")
         .path("/auth")
         .json(&Credentials {
-            username: String::from("mara"),
-            password: String::from("secret"),
+            username: username,
+            password: password,
         })
         .reply(&api)
         .await;
 
     assert_eq!(resp.status(), StatusCode::OK);
-    // assert_eq!(resp.body(), "{\"data\":{\"id\":123}}");
 
+    // login with non-existing user
     let resp = request()
         .method("POST")
         .path("/auth")
@@ -82,6 +86,7 @@ async fn test_create_profile() {
     assert_eq!(resp.status(), StatusCode::CREATED);
     assert_eq!(resp.body(), "{\"data\":{\"id\":1,\"type\":\"admin\"}}");
 
+    // create profile with existing username
     let resp = request()
         .method("POST")
         .path("/profiles")
@@ -127,6 +132,7 @@ async fn test_create_course() {
 
     let api = auth::auth(db.clone()).or(course_filter::courses(db));
 
+    // create course without authorization
     let resp = request()
         .method("POST")
         .path("/courses")
@@ -158,6 +164,7 @@ async fn test_create_course() {
     let value: Value = serde_json::from_str(data).unwrap();
     let authorization = format!("Bearer {}", value["data"]["token"]);
 
+    // admin create course
     let resp = request()
         .method("POST")
         .header("Authorization", authorization)
@@ -189,6 +196,7 @@ async fn test_create_course() {
     let value: Value = serde_json::from_str(data).unwrap();
     let authorization = format!("Bearer {}", value["data"]["token"]);
 
+    // trainee try to create course
     let resp = request()
         .method("POST")
         .header("Authorization", authorization)
