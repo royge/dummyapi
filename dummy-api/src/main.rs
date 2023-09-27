@@ -52,7 +52,7 @@ async fn main() {
     let cors = warp::cors()
         .allow_any_origin()
         .allow_headers(vec!["Content-Type", "Authorization"])
-        .allow_methods(vec!["POST"]);
+        .allow_methods(vec!["POST", "OPTIONS", "PUT"]);
 
     // View access logs by setting `RUST_LOG=auth`.
     let routes = api.with(cors).with(warp::log("auth"));
