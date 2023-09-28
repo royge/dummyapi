@@ -6,9 +6,9 @@ on:
     paths-ignore:
       - 'go-course/**'
       - 'go-course/*'
-      - '*.md'
       - '.github/workflows/node.js.yml'
       - '.gitignore'
+      - '*.(json|png|jpg|md)'
   pull_request:
     branches: [ "main" ]
     paths-ignore:
@@ -17,6 +17,7 @@ on:
       - '*.md'
       - '.github/workflows/node.js.yml'
       - '.gitignore'
+      - '*.(json|png|jpg|md)'
 
 env:
   CARGO_TERM_COLOR: always
