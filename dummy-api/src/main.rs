@@ -9,7 +9,7 @@ async fn main() {
     if env::var_os("RUST_LOG").is_none() {
         // Set `RUST_LOG=auth=debug` to see debug logs,
         // this only shows access logs.
-        env::set_var("RUST_LOG", "todos=info");
+        env::set_var("RUST_LOG", "auth=info");
     }
 
     // Generate a random secret key to sign JWT tokens with.

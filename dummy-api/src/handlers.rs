@@ -142,10 +142,10 @@ pub mod course {
     use crate::auth;
     use crate::handlers::apiresponse;
     use crate::models::course::{Course, COURSES};
-    use crate::models::profile;
-    use crate::models::Response;
+    use crate::models::{profile, ListOptions, Response};
     use crate::store::Db;
     use serde_json::json;
+    use std;
     use std::convert::Infallible;
     use std::convert::TryFrom;
     use warp::http::StatusCode;
@@ -242,13 +242,47 @@ pub mod course {
 
         apiresponse::not_found("Course not found!")
     }
+
+    pub async fn list(
+        opts: ListOptions,
+        db: Db,
+        user: auth::User,
+    ) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("course_list");
+
+        if user.id == 0 {
+            return apiresponse::unauthorized();
+        }
+
+        let mut db = db.lock().await;
+
+        let docs: Vec<&mut Vec<u8>> = db
+            .get_mut(COURSES)
+            .unwrap()
+            .into_iter()
+            .skip(opts.offset.unwrap_or(0) as usize)
+            .take(opts.limit.unwrap_or(std::u8::MAX) as usize)
+            .collect::<Vec<&mut Vec<u8>>>();
+
+        let mut courses: Vec<Course> = Vec::new();
+
+        for doc in docs.iter() {
+            let course: Course = bincode::deserialize(&doc).unwrap();
+            courses.push(course);
+        }
+
+        let json = warp::reply::json(&Response {
+            data: json!(courses),
+            error: json!(null),
+        });
+        Ok(warp::reply::with_status(json, StatusCode::OK))
+    }
 }
 
 pub mod topic {
     use crate::handlers::apiresponse;
-    use crate::models::profile;
     use crate::models::topic::{Topic, TOPICS};
-    use crate::models::Response;
+    use crate::models::{profile, ListOptions, Response};
     use crate::store::Db;
     use crate::{auth, course};
     use serde_json::json;
@@ -357,5 +391,52 @@ pub mod topic {
         }
 
         apiresponse::not_found("Topic not found!")
+    }
+
+    pub async fn list(
+        opts: ListOptions,
+        db: Db,
+        user: auth::User,
+    ) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("topic_list");
+
+        log::debug!("topic_list: {:?}", opts);
+
+        if user.id == 0 {
+            return apiresponse::unauthorized();
+        }
+
+        let mut db = db.lock().await;
+
+        let docs: Vec<&mut Vec<u8>> = db
+            .get_mut(TOPICS)
+            .unwrap()
+            .into_iter()
+            .filter(|doc| {
+                // NOTE: This is not effecient.
+                let course_id = opts.course_id.unwrap_or(0);
+                if course_id == 0 {
+                    return true;
+                }
+
+                let topic: Topic = bincode::deserialize(&doc).unwrap();
+                topic.course_id == course_id
+            })
+            .skip(opts.offset.unwrap_or(0) as usize)
+            .take(opts.limit.unwrap_or(std::u8::MAX) as usize)
+            .collect::<Vec<&mut Vec<u8>>>();
+
+        let mut topics: Vec<Topic> = Vec::new();
+
+        for doc in docs.iter() {
+            let topic: Topic = bincode::deserialize(&doc).unwrap();
+            topics.push(topic);
+        }
+
+        let json = warp::reply::json(&Response {
+            data: json!(topics),
+            error: json!(null),
+        });
+        Ok(warp::reply::with_status(json, StatusCode::OK))
     }
 }

@@ -1,6 +1,6 @@
-use serde_derive::Serialize;
-use serde_json::Value;
 use super::store::Db;
+use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Serialize)]
 pub struct Response {
@@ -12,10 +12,10 @@ pub struct Response {
 }
 
 pub mod profile {
+    use bincode;
     use rand::Rng;
     use serde_derive::{Deserialize, Serialize};
     use std::error::Error;
-    use bincode;
 
     pub const PROFILES: &str = "profiles";
 
@@ -245,4 +245,11 @@ pub mod topic {
             self
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListOptions {
+    pub limit: Option<u8>,
+    pub offset: Option<u8>,
+    pub course_id: Option<u8>,
 }

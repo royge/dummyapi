@@ -1,6 +1,7 @@
 use super::auth;
 use super::handlers;
 use super::models::course::{self, Course};
+use super::models::ListOptions;
 use std::convert::Infallible;
 use warp::Filter;
 use super::store::Db;
@@ -8,7 +9,9 @@ use super::store::Db;
 pub fn courses(
     db: Db,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    create(db.clone()).or(update(db))
+    create(db.clone())
+        .or(update(db.clone()))
+        .or(list(db))
 }
 
 pub fn create(
@@ -31,6 +34,17 @@ pub fn update(
         .and(with_db(db.clone()))
         .and(auth::with_auth(db.clone()))
         .and_then(handlers::course::update)
+}
+
+pub fn list(
+    db: Db,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("courses")
+        .and(warp::get())
+        .and(warp::query::<ListOptions>())
+        .and(with_db(db.clone()))
+        .and(auth::with_auth(db.clone()))
+        .and_then(handlers::course::list)
 }
 
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {

@@ -14,8 +14,8 @@ erase when the server terminates. When there is no request coming in for around
    1. User authentication
    1. Creating and updating courses
    1. Creating and updating course topics
-   1. _[TODO]_ Listing of courses
-   1. _[TODO]_ Listing of course's topics
+   1. Listing of courses
+   1. Listing of course's topics
 
 ### 1. User Profile Registration
 --------------------------------
@@ -181,7 +181,39 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.3 Creating A New Course Topic
+   ### 3.3 Listing Courses
+
+   **API Route**: `/courses`
+
+   **Method**: `GET`
+
+   **Sample Request**
+
+   _Header:_
+
+   ```
+   Authorization: Bearer [JWT]
+   ```
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": [{ "id": 10, "title": "Title", "description": "Description", "creator_id": 12 }]
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Not authorized!"
+   }
+   ```
+
+   ### 3.4 Creating A New Course Topic
 
    **API Route**: `/topics`
 
@@ -223,7 +255,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.4 Updating Existing Course Topic
+   ### 3.5 Updating Existing Course Topic
 
    **API Route**: `/topics/{topic-id}`
 
@@ -261,5 +293,40 @@ erase when the server terminates. When there is no request coming in for around
    ```json
    {
       "error": "Title is no longer available!"
+   }
+   ```
+
+   ### 3.6 Listing Course Topics
+
+   **API Route**:
+
+       - `/topics`
+       - `/topics?course_id={course-id}`
+
+   **Method**: `GET`
+
+   **Sample Request**
+
+   _Header:_
+
+   ```
+   Authorization: Bearer [JWT]
+   ```
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": [{ "id": 10, "title": "Title", "description": "Description", "creator_id": 12, "course_id": 123 }]
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Not authorized!"
    }
    ```
