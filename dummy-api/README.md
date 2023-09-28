@@ -99,7 +99,7 @@ erase when the server terminates. When there is no request coming in for around
 ### 3. Course Management
 ------------------------
 
-   ### 3.1 Creating A New Course
+   ### 3.1. Creating A New Course
 
    **API Route**: `/courses`
 
@@ -140,7 +140,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.2 Updating Existing Course
+   ### 3.2. Updating Existing Course
 
    **API Route**: `/courses/{course-id}`
 
@@ -181,7 +181,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.3 Listing Courses
+   ### 3.3. Listing Courses
 
    **API Route**: `/courses`
 
@@ -213,7 +213,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.4 Creating A New Course Topic
+   ### 3.4. Creating A New Course Topic
 
    **API Route**: `/topics`
 
@@ -255,7 +255,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.5 Updating Existing Course Topic
+   ### 3.5. Updating Existing Course Topic
 
    **API Route**: `/topics/{topic-id}`
 
@@ -296,12 +296,9 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.6 Listing Course Topics
+   ### 3.6. Listing Course Topics
 
-   **API Route**:
-
-       - `/topics`
-       - `/topics?course_id={course-id}`
+   **API Route**: `/topics?course_id={course-id}`
 
    **Method**: `GET`
 
