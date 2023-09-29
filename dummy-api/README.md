@@ -185,6 +185,17 @@ erase when the server terminates. When there is no request coming in for around
 
    **API Route**: `/courses`
 
+   **Parameters**:
+
+   _Pagination_
+
+   - `limit` - Number of records to retrieve.
+   - `offset` - Page number. NOTE: Page starts with `0`.
+
+   Example:
+
+   - `/courses?limit=10&offset=1` - To get next page `2` of `10` courses.
+
    **Method**: `GET`
 
    **Sample Request**
@@ -301,6 +312,22 @@ erase when the server terminates. When there is no request coming in for around
    **API Route**: `/topics?course_id={course-id}`
 
    **Method**: `GET`
+
+   **Parameters**:
+
+   _Course Filter_
+
+   - `course_id` - Get topics under a specific course.
+
+   _Pagination_
+
+   - `limit` - Number of records to retrieve.
+   - `offset` - Page number. NOTE: Page starts with `0`.
+
+   Example:
+
+   - `/topics?course_id=1&limit=10&offset=0` - To get next page `1` of `10`
+       topics under course `#1`.
 
    **Sample Request**
 

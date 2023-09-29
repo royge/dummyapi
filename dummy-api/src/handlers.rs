@@ -400,8 +400,6 @@ pub mod topic {
     ) -> Result<impl warp::Reply, Infallible> {
         log::debug!("topic_list");
 
-        log::debug!("topic_list: {:?}", opts);
-
         if user.id == 0 {
             return apiresponse::unauthorized();
         }
