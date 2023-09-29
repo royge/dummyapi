@@ -10,6 +10,7 @@ pub fn topics(
     db: Db,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     create(db.clone())
+        .or(get(db.clone()))
         .or(update(db.clone()))
         .or(list(db))
 }
@@ -23,6 +24,16 @@ pub fn create(
         .and(with_db(db.clone()))
         .and(auth::with_auth(db.clone()))
         .and_then(handlers::topic::create)
+}
+
+pub fn get(
+    db: Db,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("topics" / u8)
+        .and(warp::get())
+        .and(with_db(db.clone()))
+        .and(auth::with_auth(db.clone()))
+        .and_then(handlers::topic::get)
 }
 
 pub fn update(

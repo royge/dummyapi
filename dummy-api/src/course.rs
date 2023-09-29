@@ -10,6 +10,7 @@ pub fn courses(
     db: Db,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     create(db.clone())
+        .or(get(db.clone()))
         .or(update(db.clone()))
         .or(list(db))
 }
@@ -23,6 +24,16 @@ pub fn create(
         .and(with_db(db.clone()))
         .and(auth::with_auth(db.clone()))
         .and_then(handlers::course::create)
+}
+
+pub fn get(
+    db: Db,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("courses" / u8)
+        .and(warp::get())
+        .and(with_db(db.clone()))
+        .and(auth::with_auth(db.clone()))
+        .and_then(handlers::course::get)
 }
 
 pub fn update(
@@ -57,7 +68,7 @@ fn json_body() -> impl Filter<Extract = (Course,), Error = warp::Rejection> + Cl
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
-pub async fn get<'a>(id: u8, db: &'a Db) -> Result<Course, Box<dyn std::error::Error>> {
+pub async fn find<'a>(id: u8, db: &'a Db) -> Result<Course, Box<dyn std::error::Error>> {
     if id == 0 {
         return Err("Course ID is required!".into());
     }

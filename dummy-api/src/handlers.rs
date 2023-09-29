@@ -243,6 +243,35 @@ pub mod course {
         apiresponse::not_found("Course not found!")
     }
 
+    pub async fn get(
+        id: u8,
+        db: Db,
+        user: auth::User,
+    ) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("course_get: {}", id);
+
+        if user.id == 0 {
+            return apiresponse::unauthorized();
+        }
+
+        let mut db = db.lock().await;
+
+        let docs: &mut Vec<Vec<u8>> = db.get_mut(COURSES).unwrap();
+
+        for doc in docs.iter() {
+            let course: Course = bincode::deserialize(&doc).unwrap();
+            if course.id == id {
+                let json = warp::reply::json(&Response {
+                    data: json!(course),
+                    error: json!(null),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::OK));
+            }
+        }
+
+        apiresponse::not_found("Course not found!")
+    }
+
     pub async fn list(
         opts: ListOptions,
         db: Db,
@@ -308,7 +337,7 @@ pub mod topic {
             _ => {}
         }
 
-        if course::get(topic.course_id, &db).await.is_err() {
+        if course::find(topic.course_id, &db).await.is_err() {
             return apiresponse::bad_request("Course not found!");
         }
 
@@ -343,6 +372,35 @@ pub mod topic {
             error: json!(null),
         });
         Ok(warp::reply::with_status(json, StatusCode::CREATED))
+    }
+
+    pub async fn get(
+        id: u8,
+        db: Db,
+        user: auth::User,
+    ) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("topic_get: {}", id);
+
+        if user.id == 0 {
+            return apiresponse::unauthorized();
+        }
+
+        let mut db = db.lock().await;
+
+        let docs: &mut Vec<Vec<u8>> = db.get_mut(TOPICS).unwrap();
+
+        for doc in docs.iter() {
+            let topic: Topic = bincode::deserialize(&doc).unwrap();
+            if topic.id == id {
+                let json = warp::reply::json(&Response {
+                    data: json!(topic),
+                    error: json!(null),
+                });
+                return Ok(warp::reply::with_status(json, StatusCode::OK));
+            }
+        }
+
+        apiresponse::not_found("Topic not found!")
     }
 
     pub async fn update(
