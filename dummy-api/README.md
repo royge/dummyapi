@@ -140,7 +140,41 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.2. Updating Existing Course
+   ### 3.2. Getting and Existing Course
+
+   _NOTE:_ `Alpha` status and not yet tested.
+
+   **API Route**: `/courses/{id}`
+
+   **Method**: `GET`
+
+   **Sample Request**
+
+   _Header:_
+
+   ```
+   Authorization: Bearer [JWT]
+   ```
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": { "id": 10, "title": "Title", "description": "Description", "creator_id": 12 }
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Course not found!"
+   }
+   ```
+
+   ### 3.3. Updating Existing Course
 
    **API Route**: `/courses/{course-id}`
 
@@ -181,7 +215,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.3. Listing Courses
+   ### 3.4. Listing Courses
 
    **API Route**: `/courses`
 
@@ -224,7 +258,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.4. Creating A New Course Topic
+   ### 3.5. Creating A New Course Topic
 
    **API Route**: `/topics`
 
@@ -266,7 +300,41 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.5. Updating Existing Course Topic
+   ### 3.6. Getting an Existing Course Topic
+
+   _NOTE:_ `Alpha` status and not yet tested.
+
+   **API Route**: `/topics/{id}`
+
+   **Method**: `GET`
+
+   **Sample Request**
+
+   _Header:_
+
+   ```
+   Authorization: Bearer [JWT]
+   ```
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": { "id": 10, "title": "Title", "description": "Description", "creator_id": 12, "course_id": 123 }
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Topic not found!"
+   }
+   ```
+
+   ### 3.7. Updating Existing Course Topic
 
    **API Route**: `/topics/{topic-id}`
 
@@ -307,7 +375,7 @@ erase when the server terminates. When there is no request coming in for around
    }
    ```
 
-   ### 3.6. Listing Course Topics
+   ### 3.8. Listing Course Topics
 
    **API Route**: `/topics?course_id={course-id}`
 
@@ -327,7 +395,7 @@ erase when the server terminates. When there is no request coming in for around
    Example:
 
    - `/topics?course_id=1&limit=10&offset=0` - To get next page `1` of `10`
-       topics under course `#1`.
+       topics under course `1`.
 
    **Sample Request**
 
