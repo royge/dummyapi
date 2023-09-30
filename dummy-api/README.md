@@ -10,15 +10,17 @@ erase when the server terminates. When there is no request coming in for around
 
 ## Supported RESTful APIs
 
-   1. User profile registration
+   1. User profile management
    1. User authentication
    1. Creating and updating courses
    1. Creating and updating course topics
    1. Listing of courses
    1. Listing of course's topics
 
-### 1. User Profile Registration
+### 1. User Profile Management
 --------------------------------
+
+   ### 1.1. Creating New Profile
 
    **API Route**: `/profiles`
 
@@ -61,6 +63,30 @@ erase when the server terminates. When there is no request coming in for around
    - `admin` - If you want to be an organization administration.
    - `teacher` - If you want to be a teacher of the organization.
    - `student` - If you want to study in the organization.
+
+   ### 1.2. Getting Existing Profile
+
+   **API Route**: `/profiles/{id}`
+
+   **Method**: `GET`
+
+   **Sample Response**
+
+   _Success_
+
+   ```json
+   {
+      "data": { "id": 10, "type": "admin", "username": "Username", "first_name": "Steve", "last_name": "Murphy" }
+   }
+   ```
+
+   _Failure_
+
+   ```json
+   {
+      "error": "Profile not found!"
+   }
+   ```
 
 ### 2. User Authentication
 --------------------------
