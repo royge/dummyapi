@@ -1,6 +1,6 @@
 use super::config::CONFIG;
 use super::handlers;
-use super::models::profile::{get_kind, Credentials, Kind};
+use super::models::profile::{get_kind, Credentials, Kind, Profile};
 use super::store::Db;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
@@ -43,6 +43,24 @@ pub struct Claims {
 pub struct User {
     pub id: u8,
     pub role: Kind,
+}
+
+impl User {
+    pub fn can_view(&self, profile: &Profile) -> bool {
+        if self.id == profile.id {
+            return true;
+        }
+
+        if self.role == Kind::Admin {
+            return true;
+        }
+
+        if self.role == Kind::Mentor {
+            return profile.kind == Kind::Trainee;
+        }
+
+        false
+    }
 }
 
 pub fn generate_token(user_id: u8) -> Result<String, Box<dyn std::error::Error>> {
@@ -137,4 +155,36 @@ async fn test_jwt_encode_decode() {
 
     let user_id = decode_token(&token).unwrap();
     assert_eq!(user_id, 123);
+}
+
+#[test]
+fn test_user_can_view() {
+    let trainee = User {
+        id: 1,
+        role: Kind::Trainee,
+    };
+
+    let admin = User {
+        id: 2,
+        role: Kind::Admin,
+    };
+
+    let mentor = User {
+        id: 3,
+        role: Kind::Mentor,
+    };
+
+    let trainee_profile = Profile { id: trainee.id, ..Default::default() };
+    let mentor_profile = Profile { id: mentor.id, kind: Kind::Mentor, ..Default::default() };
+    let admin_profile = Profile { id: admin.id, kind: Kind::Admin, ..Default::default() };
+
+    assert!(trainee.can_view(&trainee_profile));
+    assert!(admin.can_view(&trainee_profile));
+    assert!(mentor.can_view(&trainee_profile));
+
+    assert!(!trainee.can_view(&mentor_profile));
+    assert!(!trainee.can_view(&admin_profile));
+    assert!(admin.can_view(&mentor_profile));
+    assert!(mentor.can_view(&mentor_profile));
+    assert!(!mentor.can_view(&admin_profile));
 }

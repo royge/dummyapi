@@ -93,7 +93,7 @@ pub mod profile {
         password
     }
 
-    #[derive(Debug, Deserialize, Serialize, Clone)]
+    #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
     pub enum Kind {
         #[serde(rename = "root")]
         Root,

@@ -4,10 +4,18 @@ pub mod apiresponse {
     use std::convert::Infallible;
     use warp::http::StatusCode;
 
-    pub fn unauthorized() -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+    pub fn unauthorized(
+        message: &str,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+        let mut message = message;
+
+        if message.is_empty() {
+            message = "Not authorized!";
+        }
+
         let json = warp::reply::json(&Response {
             data: json!(null),
-            error: json!("Not authorized!"),
+            error: json!(message),
         });
         return Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED));
     }
@@ -52,16 +60,35 @@ pub mod apiresponse {
         });
         return Ok(warp::reply::with_status(json, StatusCode::NOT_FOUND));
     }
+
+    pub fn ok(
+        data: serde_json::Value,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+        let json = warp::reply::json(&Response {
+            data: data,
+            error: json!(null),
+        });
+        return Ok(warp::reply::with_status(json, StatusCode::OK));
+    }
+
+    pub fn created(
+        data: serde_json::Value,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+        let json = warp::reply::json(&Response {
+            data: data,
+            error: json!(null),
+        });
+        return Ok(warp::reply::with_status(json, StatusCode::CREATED));
+    }
 }
 
 pub mod auth {
     use crate::auth::generate_token;
+    use crate::handlers::apiresponse;
     use crate::models::profile::{Credentials, Profile, PROFILES};
-    use crate::models::Response;
     use crate::store::Db;
     use serde_json::json;
     use std::convert::Infallible;
-    use warp::http::StatusCode;
 
     pub async fn login(credentials: Credentials, db: Db) -> Result<impl warp::Reply, Infallible> {
         log::debug!("auth_login: {:?}", credentials);
@@ -73,35 +100,26 @@ pub mod auth {
             let account: Profile = bincode::deserialize(&doc).unwrap();
             if account.username == credentials.username && account.password == credentials.password
             {
-                let json = warp::reply::json(&Response {
-                    data: json!({
-                        "id": account.id,
-                        "token": generate_token(account.id).unwrap(),
-                        "role": account.kind,
-                    }),
-                    error: json!(null),
-                });
-                return Ok(warp::reply::with_status(json, StatusCode::OK));
+                return apiresponse::ok(json!({
+                    "id": account.id,
+                    "token": generate_token(account.id).unwrap(),
+                    "role": account.kind,
+                }));
             }
         }
 
-        let json = warp::reply::json(&Response {
-            data: json!(null),
-            error: json!("Invalid username or password!"),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED))
+        apiresponse::unauthorized("Invalid username or password!")
     }
 }
 
 pub mod profile {
+    use crate::auth;
     use crate::handlers::apiresponse;
     use crate::models::profile::{Profile, PROFILES};
-    use crate::models::Response;
     use crate::store::Db;
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;
-    use warp::http::StatusCode;
 
     pub async fn create(mut profile: Profile, db: Db) -> Result<impl warp::Reply, Infallible> {
         log::debug!("profile_create: {:?}", profile);
@@ -130,11 +148,32 @@ pub mod profile {
         let data: Vec<u8> = bincode::serialize(&profile).unwrap();
         docs.push(data);
 
-        let json = warp::reply::json(&Response {
-            data: json!({ "id": id, "type": kind }),
-            error: json!(null),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::CREATED))
+        apiresponse::created(json!({ "id": id, "type": kind }))
+    }
+
+    pub async fn get(id: u8, db: Db, user: auth::User) -> Result<impl warp::Reply, Infallible> {
+        log::debug!("profile_get: {:?}", id);
+
+        let db = db.lock().await;
+        let docs = db.get(PROFILES).unwrap();
+
+        for doc in docs.iter() {
+            let account: Profile = bincode::deserialize(&doc).unwrap();
+            if account.id == id {
+                if !user.can_view(&account) {
+                    return apiresponse::forbidden();
+                }
+                return apiresponse::ok(json!({
+                    "id": account.id,
+                    "username": account.username,
+                    "firstname": account.first_name,
+                    "lastname": account.last_name,
+                    "type": account.kind,
+                }));
+            }
+        }
+
+        apiresponse::not_found("Profile not found!")
     }
 }
 
@@ -142,13 +181,12 @@ pub mod course {
     use crate::auth;
     use crate::handlers::apiresponse;
     use crate::models::course::{Course, COURSES};
-    use crate::models::{profile, ListOptions, Response};
+    use crate::models::{profile, ListOptions};
     use crate::store::Db;
     use serde_json::json;
     use std;
     use std::convert::Infallible;
     use std::convert::TryFrom;
-    use warp::http::StatusCode;
 
     pub async fn create(
         course: Course,
@@ -158,7 +196,7 @@ pub mod course {
         log::debug!("course_create: {:?}", course);
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         match user.role {
@@ -190,11 +228,7 @@ pub mod course {
 
         docs.push(bincode::serialize(&course).unwrap());
 
-        let json = warp::reply::json(&Response {
-            data: json!(course),
-            error: json!(null),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::CREATED))
+        apiresponse::created(json!(course))
     }
 
     pub async fn update(
@@ -206,7 +240,7 @@ pub mod course {
         log::debug!("course_update: {:?}", course);
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         match user.role {
@@ -232,26 +266,18 @@ pub mod course {
 
                 *doc = bincode::serialize(&existing).unwrap();
 
-                let json = warp::reply::json(&Response {
-                    data: json!(existing),
-                    error: json!(null),
-                });
-                return Ok(warp::reply::with_status(json, StatusCode::OK));
+                return apiresponse::ok(json!(existing));
             }
         }
 
         apiresponse::not_found("Course not found!")
     }
 
-    pub async fn get(
-        id: u8,
-        db: Db,
-        user: auth::User,
-    ) -> Result<impl warp::Reply, Infallible> {
+    pub async fn get(id: u8, db: Db, user: auth::User) -> Result<impl warp::Reply, Infallible> {
         log::debug!("course_get: {}", id);
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         let mut db = db.lock().await;
@@ -261,11 +287,7 @@ pub mod course {
         for doc in docs.iter() {
             let course: Course = bincode::deserialize(&doc).unwrap();
             if course.id == id {
-                let json = warp::reply::json(&Response {
-                    data: json!(course),
-                    error: json!(null),
-                });
-                return Ok(warp::reply::with_status(json, StatusCode::OK));
+                return apiresponse::ok(json!(course));
             }
         }
 
@@ -280,7 +302,7 @@ pub mod course {
         log::debug!("course_list");
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         let mut db = db.lock().await;
@@ -300,24 +322,19 @@ pub mod course {
             courses.push(course);
         }
 
-        let json = warp::reply::json(&Response {
-            data: json!(courses),
-            error: json!(null),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::OK))
+        apiresponse::ok(json!(courses))
     }
 }
 
 pub mod topic {
     use crate::handlers::apiresponse;
     use crate::models::topic::{Topic, TOPICS};
-    use crate::models::{profile, ListOptions, Response};
+    use crate::models::{profile, ListOptions};
     use crate::store::Db;
     use crate::{auth, course};
     use serde_json::json;
     use std::convert::Infallible;
     use std::convert::TryFrom;
-    use warp::http::StatusCode;
 
     pub async fn create(
         topic: Topic,
@@ -327,7 +344,7 @@ pub mod topic {
         log::debug!("topic_create: {:?}", topic);
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         match user.role {
@@ -367,22 +384,14 @@ pub mod topic {
 
         docs.push(bincode::serialize(&topic).unwrap());
 
-        let json = warp::reply::json(&Response {
-            data: json!(topic),
-            error: json!(null),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::CREATED))
+        apiresponse::created(json!(topic))
     }
 
-    pub async fn get(
-        id: u8,
-        db: Db,
-        user: auth::User,
-    ) -> Result<impl warp::Reply, Infallible> {
+    pub async fn get(id: u8, db: Db, user: auth::User) -> Result<impl warp::Reply, Infallible> {
         log::debug!("topic_get: {}", id);
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         let mut db = db.lock().await;
@@ -392,11 +401,7 @@ pub mod topic {
         for doc in docs.iter() {
             let topic: Topic = bincode::deserialize(&doc).unwrap();
             if topic.id == id {
-                let json = warp::reply::json(&Response {
-                    data: json!(topic),
-                    error: json!(null),
-                });
-                return Ok(warp::reply::with_status(json, StatusCode::OK));
+                return apiresponse::ok(json!(topic));
             }
         }
 
@@ -412,7 +417,7 @@ pub mod topic {
         log::debug!("topic_update: {:?}", topic);
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         match user.role {
@@ -440,11 +445,7 @@ pub mod topic {
 
                 *doc = bincode::serialize(&existing).unwrap();
 
-                let json = warp::reply::json(&Response {
-                    data: json!(existing),
-                    error: json!(null),
-                });
-                return Ok(warp::reply::with_status(json, StatusCode::OK));
+                return apiresponse::ok(json!(existing));
             }
         }
 
@@ -459,7 +460,7 @@ pub mod topic {
         log::debug!("topic_list");
 
         if user.id == 0 {
-            return apiresponse::unauthorized();
+            return apiresponse::unauthorized("");
         }
 
         let mut db = db.lock().await;
@@ -489,10 +490,6 @@ pub mod topic {
             topics.push(topic);
         }
 
-        let json = warp::reply::json(&Response {
-            data: json!(topics),
-            error: json!(null),
-        });
-        Ok(warp::reply::with_status(json, StatusCode::OK))
+        apiresponse::ok(json!(topics))
     }
 }
