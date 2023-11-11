@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - 'go-course/**'
       - 'go-course/*'
-      - '.github/workflows/node.js.yml'
       - '.gitignore'
       - '*.(json|png|jpg|md)'
   pull_request:
@@ -15,7 +14,6 @@ on:
       - 'go-course/**'
       - 'go-course/*'
       - '*.md'
-      - '.github/workflows/node.js.yml'
       - '.gitignore'
       - '*.(json|png|jpg|md)'
 
@@ -32,9 +30,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dummy-api
 
     steps:
     - uses: actions/checkout@v3
