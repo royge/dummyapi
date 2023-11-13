@@ -1,12 +1,8 @@
 # Dummy Backend
 
-This a dummy backend API for course management project.
+[![Test](https://github.com/royge/dummyapi/actions/workflows/rust.yml/badge.svg)](https://github.com/royge/dummyapi/actions/workflows/rust.yml)
 
-_Base URL:_ [https://dummy-api-ygn33ixetq-as.a.run.app](https://dummy-api-ygn33ixetq-as.a.run.app)
-
-_**WARNING**:_ Your data is not saved in a permanent storage, so it will be
-erase when the server terminates. When there is no request coming in for around
-5 minutes or more since the last one the server terminates to save costs.
+This a dummy backend API for a course management project.
 
 ## Supported RESTful APIs
 
