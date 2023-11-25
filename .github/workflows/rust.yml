@@ -30,6 +30,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Run lint
+      run: cargo clippy
+
     - name: Run tests
       run: cargo test
 
