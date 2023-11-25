@@ -77,7 +77,7 @@ pub fn generate_token(user_id: u8) -> Result<String, Box<dyn std::error::Error>>
     let token = encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(config.jwt_secret.as_ref()),
+        &EncodingKey::from_secret(config.jwt_secret),
     )?;
     Ok(token)
 }
@@ -93,12 +93,12 @@ fn decode_token(token: &str) -> Result<u8, Rejection> {
         .get()
         .expect("Application is not properly configured.");
 
-    let token = token.replace("\"", "");
+    let token = token.replace('\"', "");
 
     let validation = Validation::new(Algorithm::HS256);
     let token_message = decode::<Claims>(
         &token,
-        &DecodingKey::from_secret(config.jwt_secret.as_ref()),
+        &DecodingKey::from_secret(config.jwt_secret),
         &validation,
     );
 

@@ -1,5 +1,4 @@
 use dummy_api::{auth, config, course, models, profile, store, topic};
-use hex;
 use lazy_static::lazy_static;
 use std::env;
 use warp::Filter;

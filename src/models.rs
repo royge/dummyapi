@@ -130,12 +130,12 @@ pub mod profile {
         }
     }
 
-    pub async fn get_kind<'a>(db: &'a super::Db, id: u8) -> Result<Kind, Box<dyn Error>> {
+    pub async fn get_kind(db: &super::Db, id: u8) -> Result<Kind, Box<dyn Error>> {
         let db = db.lock().await;
 
         let docs: &Vec<Vec<u8>> = db.get(PROFILES).unwrap();
         for data in docs.iter() {
-            let prof: Profile = bincode::deserialize(&data).unwrap();
+            let prof: Profile = bincode::deserialize(data).unwrap();
             if prof.id == id {
                 return Ok(prof.kind.clone());
             }

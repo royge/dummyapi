@@ -16,7 +16,7 @@ pub async fn new_db(collections: Vec<&str>) -> Db {
         _db.insert(name.to_string(), Vec::new());
     }
 
-    return db
+    db
 }
 
 #[tokio::test]

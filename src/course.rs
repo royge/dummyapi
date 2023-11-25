@@ -68,7 +68,7 @@ fn json_body() -> impl Filter<Extract = (Course,), Error = warp::Rejection> + Cl
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
-pub async fn find<'a>(id: u8, db: &'a Db) -> Result<Course, Box<dyn std::error::Error>> {
+pub async fn find(id: u8, db: &Db) -> Result<Course, Box<dyn std::error::Error>> {
     if id == 0 {
         return Err("Course ID is required!".into());
     }
@@ -77,7 +77,7 @@ pub async fn find<'a>(id: u8, db: &'a Db) -> Result<Course, Box<dyn std::error::
 
     let docs: &Vec<Vec<u8>> = db.get(course::COURSES).unwrap();
     for data in docs.iter() {
-        let course: Course = bincode::deserialize(&data).unwrap();
+        let course: Course = bincode::deserialize(data).unwrap();
         if course.id == id {
             return Ok(course);
         }

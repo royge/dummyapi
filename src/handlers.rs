@@ -17,7 +17,7 @@ pub mod apiresponse {
             data: json!(null),
             error: json!(message),
         });
-        return Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED));
+        Ok(warp::reply::with_status(json, StatusCode::UNAUTHORIZED))
     }
 
     pub fn forbidden() -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
@@ -25,7 +25,7 @@ pub mod apiresponse {
             data: json!(null),
             error: json!("Forbidden!"),
         });
-        return Ok(warp::reply::with_status(json, StatusCode::FORBIDDEN));
+        Ok(warp::reply::with_status(json, StatusCode::FORBIDDEN))
     }
 
     pub fn internal_server_error(
@@ -35,10 +35,10 @@ pub mod apiresponse {
             data: json!(null),
             error: json!(message),
         });
-        return Ok(warp::reply::with_status(
+        Ok(warp::reply::with_status(
             json,
             StatusCode::INTERNAL_SERVER_ERROR,
-        ));
+        ))
     }
 
     pub fn bad_request(
@@ -48,7 +48,7 @@ pub mod apiresponse {
             data: json!(null),
             error: json!(message),
         });
-        return Ok(warp::reply::with_status(json, StatusCode::BAD_REQUEST));
+        Ok(warp::reply::with_status(json, StatusCode::BAD_REQUEST))
     }
 
     pub fn not_found(
@@ -58,27 +58,28 @@ pub mod apiresponse {
             data: json!(null),
             error: json!(message),
         });
-        return Ok(warp::reply::with_status(json, StatusCode::NOT_FOUND));
+        Ok(warp::reply::with_status(json, StatusCode::NOT_FOUND))
     }
 
     pub fn ok(
         data: serde_json::Value,
     ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
         let json = warp::reply::json(&Response {
-            data: data,
+            data,
             error: json!(null),
         });
-        return Ok(warp::reply::with_status(json, StatusCode::OK));
+        Ok(warp::reply::with_status(json, StatusCode::OK))
     }
 
     pub fn created(
         data: serde_json::Value,
     ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
         let json = warp::reply::json(&Response {
-            data: data,
+            data,
             error: json!(null),
         });
-        return Ok(warp::reply::with_status(json, StatusCode::CREATED));
+
+        Ok(warp::reply::with_status(json, StatusCode::CREATED))
     }
 }
 
@@ -97,7 +98,7 @@ pub mod auth {
         let docs = db.get(PROFILES).unwrap();
 
         for doc in docs.iter() {
-            let account: Profile = bincode::deserialize(&doc).unwrap();
+            let account: Profile = bincode::deserialize(doc).unwrap();
             if account.username == credentials.username && account.password == credentials.password
             {
                 return apiresponse::ok(json!({
@@ -136,7 +137,7 @@ pub mod profile {
         }
 
         for doc in docs.iter() {
-            let account: Profile = bincode::deserialize(&doc).unwrap();
+            let account: Profile = bincode::deserialize(doc).unwrap();
             if account.username == profile.username {
                 return apiresponse::bad_request("Username is no longer available!");
             }
@@ -158,7 +159,7 @@ pub mod profile {
         let docs = db.get(PROFILES).unwrap();
 
         for doc in docs.iter() {
-            let account: Profile = bincode::deserialize(&doc).unwrap();
+            let account: Profile = bincode::deserialize(doc).unwrap();
             if account.id == id {
                 if !user.can_view(&account) {
                     return apiresponse::forbidden();
@@ -220,7 +221,7 @@ pub mod course {
         }
 
         for doc in docs.iter() {
-            let existing: Course = bincode::deserialize(&doc).unwrap();
+            let existing: Course = bincode::deserialize(doc).unwrap();
             if existing.title == course.title {
                 return apiresponse::bad_request("Title is no longer available!");
             }
@@ -255,7 +256,7 @@ pub mod course {
         let docs: &mut Vec<Vec<u8>> = db.get_mut(COURSES).unwrap();
 
         for doc in docs.iter_mut() {
-            let existing: Course = bincode::deserialize(&doc).unwrap();
+            let existing: Course = bincode::deserialize(doc).unwrap();
             if existing.id == id {
                 let creator_id = existing.creator_id;
 
@@ -285,7 +286,7 @@ pub mod course {
         let docs: &mut Vec<Vec<u8>> = db.get_mut(COURSES).unwrap();
 
         for doc in docs.iter() {
-            let course: Course = bincode::deserialize(&doc).unwrap();
+            let course: Course = bincode::deserialize(doc).unwrap();
             if course.id == id {
                 return apiresponse::ok(json!(course));
             }
@@ -310,7 +311,7 @@ pub mod course {
         let docs: Vec<&mut Vec<u8>> = db
             .get_mut(COURSES)
             .unwrap()
-            .into_iter()
+            .iter_mut()
             .skip(opts.offset.unwrap_or(0) as usize)
             .take(opts.limit.unwrap_or(std::u8::MAX) as usize)
             .collect::<Vec<&mut Vec<u8>>>();
@@ -318,7 +319,7 @@ pub mod course {
         let mut courses: Vec<Course> = Vec::new();
 
         for doc in docs.iter() {
-            let course: Course = bincode::deserialize(&doc).unwrap();
+            let course: Course = bincode::deserialize(doc).unwrap();
             courses.push(course);
         }
 
@@ -347,11 +348,8 @@ pub mod topic {
             return apiresponse::unauthorized("");
         }
 
-        match user.role {
-            profile::Kind::Trainee => {
-                return apiresponse::forbidden();
-            }
-            _ => {}
+        if user.role == profile::Kind::Trainee {
+            return apiresponse::forbidden();
         }
 
         if course::find(topic.course_id, &db).await.is_err() {
@@ -372,7 +370,7 @@ pub mod topic {
         }
 
         for doc in docs.iter() {
-            let existing: Topic = bincode::deserialize(&doc).unwrap();
+            let existing: Topic = bincode::deserialize(doc).unwrap();
 
             let same_course = existing.course_id == topic.course_id;
             let same_title = existing.title == topic.title;
@@ -399,7 +397,7 @@ pub mod topic {
         let docs: &mut Vec<Vec<u8>> = db.get_mut(TOPICS).unwrap();
 
         for doc in docs.iter() {
-            let topic: Topic = bincode::deserialize(&doc).unwrap();
+            let topic: Topic = bincode::deserialize(doc).unwrap();
             if topic.id == id {
                 return apiresponse::ok(json!(topic));
             }
@@ -420,11 +418,8 @@ pub mod topic {
             return apiresponse::unauthorized("");
         }
 
-        match user.role {
-            profile::Kind::Trainee => {
-                return apiresponse::forbidden();
-            }
-            _ => {}
+        if user.role == profile::Kind::Trainee {
+            return apiresponse::forbidden();
         }
 
         let mut db = db.lock().await;
@@ -432,7 +427,7 @@ pub mod topic {
         let docs: &mut Vec<Vec<u8>> = db.get_mut(TOPICS).unwrap();
 
         for doc in docs.iter_mut() {
-            let existing: Topic = bincode::deserialize(&doc).unwrap();
+            let existing: Topic = bincode::deserialize(doc).unwrap();
             if existing.id == id {
                 let creator_id = existing.creator_id;
                 let course_id = existing.course_id;
@@ -468,7 +463,7 @@ pub mod topic {
         let docs: Vec<&mut Vec<u8>> = db
             .get_mut(TOPICS)
             .unwrap()
-            .into_iter()
+            .iter_mut()
             .filter(|doc| {
                 // NOTE: This is not effecient.
                 let course_id = opts.course_id.unwrap_or(0);
@@ -476,7 +471,7 @@ pub mod topic {
                     return true;
                 }
 
-                let topic: Topic = bincode::deserialize(&doc).unwrap();
+                let topic: Topic = bincode::deserialize(doc).unwrap();
                 topic.course_id == course_id
             })
             .skip(opts.offset.unwrap_or(0) as usize)
@@ -486,7 +481,7 @@ pub mod topic {
         let mut topics: Vec<Topic> = Vec::new();
 
         for doc in docs.iter() {
-            let topic: Topic = bincode::deserialize(&doc).unwrap();
+            let topic: Topic = bincode::deserialize(doc).unwrap();
             topics.push(topic);
         }
 
